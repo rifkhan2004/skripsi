@@ -64,8 +64,8 @@ html_code = f"""
             padding-top: 10px;
         }}
         .connection-item {{
-            padding: 5px;
-            margin: 3px 0;
+            padding: 8px;
+            margin: 5px 0;
             background: #f5f5f5;
             border-radius: 3px;
             cursor: pointer;
@@ -73,9 +73,17 @@ html_code = f"""
         .connection-item:hover {{
             background: #e0e0e0;
         }}
+        .degree-info {{
+            font-size: 0.8em;
+            color: #666;
+            margin-top: 3px;
+        }}
+        .in-degree {{ color: #2ca02c; }}
+        .out-degree {{ color: #d62728; }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.plugins.filter.min.js"></script>
 </head>
 <body>
     <div id="sigma-container"></div>
@@ -87,6 +95,7 @@ html_code = f"""
             <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
             <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
             <p><strong style="color: #ff7f0e;">Node Terhubung</strong>: Node yang berhubungan dengan node yang dipilih</p>
+            <p><strong style="color: #d62728;">Node Dipilih</strong>: Node yang sedang dipilih</p>
         </div>
         <div>
             <h3>Cari:</h3>
@@ -121,6 +130,9 @@ html_code = f"""
             }}
         }});
 
+        // Tambahkan plugin filter
+        sigma.plugins.filter = sigma.plugins.filter || {{}};
+        
         // Simpan data asli untuk reset
         let originalGraphData = null;
 
@@ -128,18 +140,36 @@ html_code = f"""
         s.graph.read(jsonData);
         originalGraphData = JSON.parse(JSON.stringify(jsonData));
         
-        // Atur ukuran node berdasarkan degree
-        s.graph.nodes().forEach(node => {{
-            if (!node.size) {{
-                node.size = Math.log(s.graph.degree(node.id) + 1);
-            }}
-            if (!node.color) {{
-                node.color = '#1f77b4';
-            }}
-            if (!node.label && node.attributes && node.attributes.name) {{
-                node.label = node.attributes.name;
-            }}
-        }});
+        // Hitung degree untuk semua node
+        function calculateDegrees() {{
+            s.graph.nodes().forEach(node => {{
+                // Hitung out-degree (edge yang keluar dari node ini)
+                node.outDegree = s.graph.outEdges(node.id).length;
+                
+                // Hitung in-degree (edge yang masuk ke node ini)
+                node.inDegree = s.graph.inEdges(node.id).length;
+                
+                // Hitung total degree
+                node.degree = node.outDegree + node.inDegree;
+                
+                // Atur ukuran node berdasarkan degree jika tidak ada ukuran
+                if (!node.size) {{
+                    node.size = Math.log(node.degree + 1);
+                }}
+                
+                // Atur warna default jika tidak ada warna
+                if (!node.color) {{
+                    node.color = '#1f77b4';
+                }}
+                
+                // Atur label jika tidak ada label
+                if (!node.label && node.attributes && node.attributes.name) {{
+                    node.label = node.attributes.name;
+                }}
+            }});
+        }}
+        
+        calculateDegrees();
         
         // Atur warna edge
         s.graph.edges().forEach(edge => {{
@@ -229,7 +259,7 @@ html_code = f"""
             details.innerHTML = '';
             connectionsContainer.innerHTML = '';
             
-            // Tampilkan atribut node
+            // Tampilkan atribut node (termasuk degree)
             const attributes = node.attributes || node;
             for (const key in attributes) {{
                 if (['x', 'y', 'size', 'color', 'id', 'label'].includes(key)) continue;
@@ -238,16 +268,50 @@ html_code = f"""
                 details.appendChild(div);
             }}
             
+            // Tambahkan informasi degree node yang dipilih
+            const degreeDiv = document.createElement('div');
+            degreeDiv.innerHTML = `
+                <div class="degree-info">
+                    <span class="out-degree">Out-Degree: ${{node.outDegree || 0}}</span> | 
+                    <span class="in-degree">In-Degree: ${{node.inDegree || 0}}</span> | 
+                    <span>Total Degree: ${{node.degree || 0}}</span>
+                </div>
+            `;
+            details.appendChild(degreeDiv);
+            
             // Tampilkan hanya node yang terhubung
             const connectedNodeIds = showConnectedNodes(node.id);
             
-            // Tampilkan daftar node yang terhubung
+            // Tampilkan daftar node yang terhubung dengan informasi degree
             connectedNodeIds.forEach(nodeId => {{
                 const connectedNode = s.graph.nodes(nodeId);
                 if (connectedNode) {{
                     const connectionItem = document.createElement('div');
                     connectionItem.className = 'connection-item';
-                    connectionItem.textContent = connectedNode.label || connectedNode.id;
+                    
+                    // Tentukan arah hubungan
+                    let direction = '';
+                    const edgesFromSelected = s.graph.edges().filter(e => 
+                        e.source === node.id && e.target === connectedNode.id);
+                    const edgesToSelected = s.graph.edges().filter(e => 
+                        e.source === connectedNode.id && e.target === node.id);
+                    
+                    if (edgesFromSelected.length > 0 && edgesToSelected.length > 0) {{
+                        direction = '↔'; // Hubungan dua arah
+                    }} else if (edgesFromSelected.length > 0) {{
+                        direction = '←'; // Node terhubung menerima dari node yang dipilih
+                    }} else if (edgesToSelected.length > 0) {{
+                        direction = '→'; // Node terhubung mengirim ke node yang dipilih
+                    }}
+                    
+                    connectionItem.innerHTML = `
+                        <div><strong>${{direction}} ${{connectedNode.label || connectedNode.id}}</strong></div>
+                        <div class="degree-info">
+                            <span class="out-degree">Out: ${{connectedNode.outDegree || 0}}</span> | 
+                            <span class="in-degree">In: ${{connectedNode.inDegree || 0}}</span> | 
+                            <span>Total: ${{connectedNode.degree || 0}}</span>
+                        </div>
+                    `;
                     
                     // Tambahkan event click untuk fokus ke node yang terhubung
                     connectionItem.addEventListener('click', () => {{
@@ -310,8 +374,8 @@ components.html(html_code, height=850)
 st.markdown(f"""
 ### Panduan Penggunaan:
 1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
-   - Detail atribut node
-   - Daftar node yang terhubung
+   - Detail atribut node termasuk out-degree dan in-degree
+   - Daftar node yang terhubung beserta informasi degree-nya
    - Hanya node yang terhubung yang akan ditampilkan di grafik
 2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
 3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
