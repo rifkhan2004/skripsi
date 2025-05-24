@@ -53,25 +53,70 @@ html_code = f"""
             max-height: 80%;
             overflow-y: auto;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            width: 300px;
+            width: 350px;
             display: none;
         }}
         .connection-list {{
             margin-top: 10px;
-            max-height: 200px;
+            max-height: 300px;
             overflow-y: auto;
             border-top: 1px solid #eee;
             padding-top: 10px;
         }}
         .connection-item {{
-            padding: 5px;
-            margin: 3px 0;
+            padding: 10px;
+            margin: 5px 0;
             background: #f5f5f5;
-            border-radius: 3px;
+            border-radius: 5px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }}
         .connection-item:hover {{
             background: #e0e0e0;
+        }}
+        .connection-header {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }}
+        .connection-name {{
+            font-weight: bold;
+            font-size: 1.1em;
+        }}
+        .connection-direction {{
+            font-size: 1.2em;
+            margin: 0 5px;
+        }}
+        .connection-stats {{
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9em;
+            color: #555;
+            margin-top: 5px;
+        }}
+        .stat-item {{
+            display: flex;
+            align-items: center;
+        }}
+        .stat-label {{
+            margin-right: 5px;
+            font-weight: bold;
+        }}
+        .out-degree {{ color: #d62728; }}
+        .in-degree {{ color: #2ca02c; }}
+        .total-degree {{ color: #1f77b4; }}
+        .attribute-item {{
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+        }}
+        .attribute-key {{
+            font-weight: bold;
+            color: #333;
+        }}
+        .attribute-value {{
+            color: #555;
         }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
@@ -87,6 +132,7 @@ html_code = f"""
             <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
             <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
             <p><strong style="color: #ff7f0e;">Node Terhubung</strong>: Node yang berhubungan dengan node yang dipilih</p>
+            <p><strong style="color: #d62728;">Node Dipilih</strong>: Node yang sedang dipilih</p>
         </div>
         <div>
             <h3>Cari:</h3>
@@ -97,7 +143,7 @@ html_code = f"""
         <h3>Atribut Node: <span id="node-label"></span></h3>
         <div id="node-details"></div>
         <div class="connection-list">
-            <h4>Node Terhubung:</h4>
+            <h4>Node Terhubung (<span id="connection-count">0</span>):</h4>
             <div id="connections-container"></div>
         </div>
     </div>
@@ -111,12 +157,12 @@ html_code = f"""
         const s = new sigma({{
             container: container,
             settings: {{
-                minNodeSize: 3,
-                maxNodeSize: 15,
-                minEdgeSize: 0.5,
-                maxEdgeSize: 2,
+                minNodeSize: 5,
+                maxNodeSize: 20,
+                minEdgeSize: 1,
+                maxEdgeSize: 3,
                 enableCamera: true,
-                labelThreshold: 5,
+                labelThreshold: 8,
                 mouseWheelEnabled: true
             }}
         }});
@@ -128,18 +174,36 @@ html_code = f"""
         s.graph.read(jsonData);
         originalGraphData = JSON.parse(JSON.stringify(jsonData));
         
-        // Atur ukuran node berdasarkan degree
-        s.graph.nodes().forEach(node => {{
-            if (!node.size) {{
-                node.size = Math.log(s.graph.degree(node.id) + 1);
-            }}
-            if (!node.color) {{
-                node.color = '#1f77b4';
-            }}
-            if (!node.label && node.attributes && node.attributes.name) {{
-                node.label = node.attributes.name;
-            }}
-        }});
+        // Hitung degree untuk semua node
+        function calculateDegrees() {{
+            s.graph.nodes().forEach(node => {{
+                // Hitung out-degree (edge yang keluar dari node ini)
+                node.outDegree = s.graph.outEdges(node.id).length;
+                
+                // Hitung in-degree (edge yang masuk ke node ini)
+                node.inDegree = s.graph.inEdges(node.id).length;
+                
+                // Hitung total degree
+                node.degree = node.outDegree + node.inDegree;
+                
+                // Atur ukuran node berdasarkan degree jika tidak ada ukuran
+                if (!node.size) {{
+                    node.size = Math.log(node.degree + 1) * 2;
+                }}
+                
+                // Atur warna default jika tidak ada warna
+                if (!node.color) {{
+                    node.color = '#1f77b4';
+                }}
+                
+                // Atur label jika tidak ada label
+                if (!node.label && node.attributes && node.attributes.name) {{
+                    node.label = node.attributes.name;
+                }}
+            }});
+        }}
+        
+        calculateDegrees();
         
         // Atur warna edge
         s.graph.edges().forEach(edge => {{
@@ -217,6 +281,21 @@ html_code = f"""
             s.refresh();
         }}
         
+        // Fungsi untuk menentukan arah hubungan
+        function getConnectionDirection(sourceId, targetId) {{
+            const edgesFromSource = s.graph.edges().filter(e => e.source === sourceId && e.target === targetId);
+            const edgesFromTarget = s.graph.edges().filter(e => e.source === targetId && e.target === sourceId);
+            
+            if (edgesFromSource.length > 0 && edgesFromTarget.length > 0) {{
+                return {{ symbol: '↔', text: 'Hubungan dua arah' }};
+            }} else if (edgesFromSource.length > 0) {{
+                return {{ symbol: '→', text: 'Dari node ini' }};
+            }} else if (edgesFromTarget.length > 0) {{
+                return {{ symbol: '←', text: 'Ke node ini' }};
+            }}
+            return {{ symbol: '', text: 'Tidak diketahui' }};
+        }}
+        
         // Fungsi tampilkan detail node
         s.bind('clickNode', function(e) {{
             const node = e.data.node;
@@ -224,30 +303,89 @@ html_code = f"""
             const label = document.getElementById('node-label');
             const details = document.getElementById('node-details');
             const connectionsContainer = document.getElementById('connections-container');
+            const connectionCount = document.getElementById('connection-count');
             
             label.textContent = node.label || node.id;
             details.innerHTML = '';
             connectionsContainer.innerHTML = '';
             
-            // Tampilkan atribut node
+            // Tampilkan atribut node dengan format yang lebih baik
             const attributes = node.attributes || node;
             for (const key in attributes) {{
                 if (['x', 'y', 'size', 'color', 'id', 'label'].includes(key)) continue;
+                
                 const div = document.createElement('div');
-                div.innerHTML = `<strong>${{key}}:</strong> ${{attributes[key]}}`;
+                div.className = 'attribute-item';
+                
+                const keySpan = document.createElement('span');
+                keySpan.className = 'attribute-key';
+                keySpan.textContent = key + ': ';
+                
+                const valueSpan = document.createElement('span');
+                valueSpan.className = 'attribute-value';
+                valueSpan.textContent = attributes[key];
+                
+                div.appendChild(keySpan);
+                div.appendChild(valueSpan);
                 details.appendChild(div);
             }}
             
             // Tampilkan hanya node yang terhubung
             const connectedNodeIds = showConnectedNodes(node.id);
+            connectionCount.textContent = connectedNodeIds.length;
             
-            // Tampilkan daftar node yang terhubung
+            // Tampilkan daftar node yang terhubung dengan informasi degree dan arah
             connectedNodeIds.forEach(nodeId => {{
                 const connectedNode = s.graph.nodes(nodeId);
                 if (connectedNode) {{
                     const connectionItem = document.createElement('div');
                     connectionItem.className = 'connection-item';
-                    connectionItem.textContent = connectedNode.label || connectedNode.id;
+                    
+                    // Tentukan arah hubungan
+                    const direction = getConnectionDirection(node.id, connectedNode.id);
+                    
+                    // Header dengan nama node dan simbol arah
+                    const header = document.createElement('div');
+                    header.className = 'connection-header';
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'connection-name';
+                    nameSpan.textContent = connectedNode.label || connectedNode.id;
+                    
+                    const directionSpan = document.createElement('span');
+                    directionSpan.className = 'connection-direction';
+                    directionSpan.textContent = direction.symbol;
+                    directionSpan.title = direction.text;
+                    
+                    header.appendChild(nameSpan);
+                    header.appendChild(directionSpan);
+                    
+                    // Statistik degree
+                    const stats = document.createElement('div');
+                    stats.className = 'connection-stats';
+                    
+                    // Out-degree
+                    const outDegree = document.createElement('div');
+                    outDegree.className = 'stat-item';
+                    outDegree.innerHTML = '<span class="stat-label">Out:</span> <span class="out-degree">' + (connectedNode.outDegree || 0) + '</span>';
+                    
+                    // In-degree
+                    const inDegree = document.createElement('div');
+                    inDegree.className = 'stat-item';
+                    inDegree.innerHTML = '<span class="stat-label">In:</span> <span class="in-degree">' + (connectedNode.inDegree || 0) + '</span>';
+                    
+                    // Total degree
+                    const totalDegree = document.createElement('div');
+                    totalDegree.className = 'stat-item';
+                    totalDegree.innerHTML = '<span class="stat-label">Total:</span> <span class="total-degree">' + (connectedNode.degree || 0) + '</span>';
+                    
+                    stats.appendChild(outDegree);
+                    stats.appendChild(inDegree);
+                    stats.appendChild(totalDegree);
+                    
+                    // Gabungkan semua elemen
+                    connectionItem.appendChild(header);
+                    connectionItem.appendChild(stats);
                     
                     // Tambahkan event click untuk fokus ke node yang terhubung
                     connectionItem.addEventListener('click', () => {{
@@ -310,8 +448,8 @@ components.html(html_code, height=850)
 st.markdown(f"""
 ### Panduan Penggunaan:
 1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
-   - Detail atribut node
-   - Daftar node yang terhubung
+   - Detail atribut node termasuk berbagai metrik jaringan
+   - Daftar node yang terhubung beserta informasi out-degree dan in-degree
    - Hanya node yang terhubung yang akan ditampilkan di grafik
 2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
 3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
