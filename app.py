@@ -56,23 +56,6 @@ html_code = f"""
             width: 300px;
             display: none;
         }}
-        .connection-list {{
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }}
-        .connection-item {{
-            padding: 5px;
-            margin: 3px 0;
-            background: #f5f5f5;
-            border-radius: 3px;
-            cursor: pointer;
-        }}
-        .connection-item:hover {{
-            background: #e0e0e0;
-        }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
@@ -86,7 +69,6 @@ html_code = f"""
             <h3>Legenda:</h3>
             <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
             <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
-            <p><strong style="color: #ff7f0e;">Node Terhubung</strong>: Node yang berhubungan dengan node yang dipilih</p>
         </div>
         <div>
             <h3>Cari:</h3>
@@ -96,10 +78,6 @@ html_code = f"""
     <div id="node-attributes-panel">
         <h3>Atribut Node: <span id="node-label"></span></h3>
         <div id="node-details"></div>
-        <div class="connection-list">
-            <h4>Node Terhubung:</h4>
-            <div id="connections-container"></div>
-        </div>
     </div>
 
     <script>
@@ -116,17 +94,12 @@ html_code = f"""
                 minEdgeSize: 0.5,
                 maxEdgeSize: 2,
                 enableCamera: true,
-                labelThreshold: 5,
-                mouseWheelEnabled: true
+                labelThreshold: 5
             }}
         }});
 
-        // Simpan data asli untuk reset
-        let originalGraphData = null;
-
         // Muat data
         s.graph.read(jsonData);
-        originalGraphData = JSON.parse(JSON.stringify(jsonData));
         
         // Atur ukuran node berdasarkan degree
         s.graph.nodes().forEach(node => {{
@@ -161,73 +134,15 @@ html_code = f"""
             s.refresh();
         }});
         
-        // Fungsi untuk menampilkan hanya node yang terhubung
-        function showConnectedNodes(nodeId) {{
-            // Reset semua node ke hidden
-            s.graph.nodes().forEach(node => {{
-                node.hidden = true;
-                node.color = '#1f77b4'; // Reset warna
-            }});
-            
-            // Tampilkan node yang dipilih
-            const selectedNode = s.graph.nodes(nodeId);
-            if (selectedNode) {{
-                selectedNode.hidden = false;
-                selectedNode.color = '#d62728'; // Warna merah untuk node yang dipilih
-            }}
-            
-            // Temukan semua node yang terhubung
-            const connectedNodes = new Set();
-            const connectedEdges = s.graph.edges().filter(edge => {{
-                return edge.source === nodeId || edge.target === nodeId;
-            }});
-            
-            connectedEdges.forEach(edge => {{
-                const otherNodeId = edge.source === nodeId ? edge.target : edge.source;
-                connectedNodes.add(otherNodeId);
-                
-                // Tampilkan edge yang terhubung
-                edge.hidden = false;
-                
-                // Tampilkan node yang terhubung
-                const otherNode = s.graph.nodes(otherNodeId);
-                if (otherNode) {{
-                    otherNode.hidden = false;
-                    otherNode.color = '#ff7f0e'; // Warna oranye untuk node terhubung
-                }}
-            }});
-            
-            // Tampilkan node yang dipilih dan edge yang terhubung
-            s.refresh();
-            
-            return Array.from(connectedNodes);
-        }}
-        
-        // Fungsi reset tampilan ke semua node
-        function resetView() {{
-            s.graph.nodes().forEach(node => {{
-                node.hidden = false;
-                node.color = '#1f77b4'; // Warna default
-            }});
-            
-            s.graph.edges().forEach(edge => {{
-                edge.hidden = false;
-            }});
-            
-            s.refresh();
-        }}
-        
         // Fungsi tampilkan detail node
         s.bind('clickNode', function(e) {{
             const node = e.data.node;
             const panel = document.getElementById('node-attributes-panel');
             const label = document.getElementById('node-label');
             const details = document.getElementById('node-details');
-            const connectionsContainer = document.getElementById('connections-container');
             
             label.textContent = node.label || node.id;
             details.innerHTML = '';
-            connectionsContainer.innerHTML = '';
             
             // Tampilkan atribut node
             const attributes = node.attributes || node;
@@ -238,58 +153,12 @@ html_code = f"""
                 details.appendChild(div);
             }}
             
-            // Tampilkan hanya node yang terhubung
-            const connectedNodeIds = showConnectedNodes(node.id);
-            
-            // Tampilkan daftar node yang terhubung
-            connectedNodeIds.forEach(nodeId => {{
-                const connectedNode = s.graph.nodes(nodeId);
-                if (connectedNode) {{
-                    const connectionItem = document.createElement('div');
-                    connectionItem.className = 'connection-item';
-                    connectionItem.textContent = connectedNode.label || connectedNode.id;
-                    
-                    // Tambahkan event click untuk fokus ke node yang terhubung
-                    connectionItem.addEventListener('click', () => {{
-                        s.camera.goTo({{
-                            x: connectedNode.x,
-                            y: connectedNode.y,
-                            ratio: 0.8
-                        }});
-                    }});
-                    
-                    connectionsContainer.appendChild(connectionItem);
-                }}
-            }});
-            
             panel.style.display = 'block';
         }});
         
-        // Sembunyikan panel dan reset tampilan saat klik area kosong
+        // Sembunyikan panel saat klik area kosong
         s.bind('clickStage', function() {{
             document.getElementById('node-attributes-panel').style.display = 'none';
-            resetView();
-        }});
-        
-        // Enable drag nodes
-        s.bind('downNode', function(e) {{
-            const node = e.data.node;
-            node.isDragging = true;
-        }});
-        
-        s.bind('mouseup', function() {{
-            s.graph.nodes().forEach(node => {{
-                node.isDragging = false;
-            }});
-        }});
-        
-        s.bind('mousemove', function(e) {{
-            const draggedNode = s.graph.nodes().find(node => node.isDragging);
-            if (draggedNode) {{
-                draggedNode.x = e.data.captor.x;
-                draggedNode.y = e.data.captor.y;
-                s.refresh();
-            }}
         }});
     </script>
 </body>
@@ -309,14 +178,11 @@ components.html(html_code, height=850)
 
 st.markdown(f"""
 ### Panduan Penggunaan:
-1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
-   - Detail atribut node
-   - Daftar node yang terhubung
-   - Hanya node yang terhubung yang akan ditampilkan di grafik
-2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
-3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
+1. **Pencarian Node**: Gunakan kotak pencarian di panel kiri untuk mencari node tertentu
+2. **Klik Node**: Klik pada node untuk melihat detail atribut dan koneksinya di panel kanan
+3. **Zoom**: Gunakan scroll mouse untuk zoom in/out
 4. **Drag Node**: Klik dan tahan node untuk memindahkannya
-5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
+5. **Double Click**: Double klik pada node untuk zoom ke node tersebut
 
 ### Informasi Teknis:
 - **Jumlah Node**: {len(data_json_content.get('nodes', []))}
