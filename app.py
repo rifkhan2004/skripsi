@@ -80,6 +80,21 @@ html_code = f"""
         }}
         .in-degree {{ color: #2ca02c; }}
         .out-degree {{ color: #d62728; }}
+        .total-degree {{ color: #1f77b4; }}
+        .connection-direction {{
+            display: inline-block;
+            width: 20px;
+            text-align: center;
+            font-weight: bold;
+        }}
+        .connection-info {{
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }}
+        .connection-label {{
+            font-weight: bold;
+        }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
@@ -274,7 +289,7 @@ html_code = f"""
                 <div class="degree-info">
                     <span class="out-degree">Out-Degree: ${{node.outDegree || 0}}</span> | 
                     <span class="in-degree">In-Degree: ${{node.inDegree || 0}}</span> | 
-                    <span>Total Degree: ${{node.degree || 0}}</span>
+                    <span class="total-degree">Total Degree: ${{node.degree || 0}}</span>
                 </div>
             `;
             details.appendChild(degreeDiv);
@@ -282,7 +297,7 @@ html_code = f"""
             // Tampilkan hanya node yang terhubung
             const connectedNodeIds = showConnectedNodes(node.id);
             
-            // Tampilkan daftar node yang terhubung dengan informasi degree
+            // Tampilkan daftar node yang terhubung dengan informasi degree dan arah hubungan
             connectedNodeIds.forEach(nodeId => {{
                 const connectedNode = s.graph.nodes(nodeId);
                 if (connectedNode) {{
@@ -291,25 +306,35 @@ html_code = f"""
                     
                     // Tentukan arah hubungan
                     let direction = '';
+                    let directionText = '';
                     const edgesFromSelected = s.graph.edges().filter(e => 
                         e.source === node.id && e.target === connectedNode.id);
                     const edgesToSelected = s.graph.edges().filter(e => 
                         e.source === connectedNode.id && e.target === node.id);
                     
                     if (edgesFromSelected.length > 0 && edgesToSelected.length > 0) {{
-                        direction = '↔'; // Hubungan dua arah
+                        direction = '↔'; 
+                        directionText = 'Hubungan dua arah';
                     }} else if (edgesFromSelected.length > 0) {{
-                        direction = '←'; // Node terhubung menerima dari node yang dipilih
+                        direction = '←'; 
+                        directionText = 'Dari node ini';
                     }} else if (edgesToSelected.length > 0) {{
-                        direction = '→'; // Node terhubung mengirim ke node yang dipilih
+                        direction = '→'; 
+                        directionText = 'Ke node ini';
                     }}
                     
                     connectionItem.innerHTML = `
-                        <div><strong>${{direction}} ${{connectedNode.label || connectedNode.id}}</strong></div>
+                        <div class="connection-label">
+                            <span class="connection-direction">${{direction}}</span>
+                            ${{connectedNode.label || connectedNode.id}}
+                        </div>
+                        <div class="connection-info">
+                            <span>${{directionText}}</span>
+                        </div>
                         <div class="degree-info">
                             <span class="out-degree">Out: ${{connectedNode.outDegree || 0}}</span> | 
                             <span class="in-degree">In: ${{connectedNode.inDegree || 0}}</span> | 
-                            <span>Total: ${{connectedNode.degree || 0}}</span>
+                            <span class="total-degree">Total: ${{connectedNode.degree || 0}}</span>
                         </div>
                     `;
                     
@@ -373,9 +398,9 @@ components.html(html_code, height=850)
 
 st.markdown(f"""
 ### Panduan Penggunaan:
-1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
+1. **Klik Node**: Klik pada node untuk melihat:
    - Detail atribut node termasuk out-degree dan in-degree
-   - Daftar node yang terhubung beserta informasi degree-nya
+   - Daftar node yang terhubung beserta informasi degree dan arah hubungan
    - Hanya node yang terhubung yang akan ditampilkan di grafik
 2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
 3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
