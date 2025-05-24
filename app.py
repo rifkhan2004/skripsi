@@ -1,62 +1,266 @@
 import streamlit as st
-from pathlib import Path
-import base64
+import streamlit.components.v1 as components
+import json
 
-# Set page config
-st.set_page_config(
-    page_title="OII Network Visualisation",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+# The data from data.json, fetched in the previous step
+data_json_content = {"nodes":[{"label":"keyboardxs","x":527.043212890625,"y":1121.2760009765625,"id":"378","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"gggilang___","x":273.08087158203125,"y":225.0216064453125,"id":"127","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"audimaxell","x":-713.412109375,"y":861.30419921875,"id":"457","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.42857142857142855","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.5","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"jawirtzz","x":1336.5831298828125,"y":375.06201171875,"id":"136","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"14","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.28312481982923E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"zclittlesun","x":-1060.163330078125,"y":683.7406616210938,"id":"645","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"79","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"yourbbypie","x":-1082.9017333984375,"y":91.91224670410156,"id":"442","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"53","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"bogoroditsye","x":-118.03048706054688,"y":-860.6763916015625,"id":"70","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"4","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.28312481982923E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"woodymolky48","x":691.913330078125,"y":982.612060546875,"id":"377","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"raysanrr","x":28.192562103271484,"y":-578.7124633789062,"id":"573","attributes":{"Out-Degree":"1","In-Degree":"1","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"2","Eigenvector Centrality":"0.007322047778057521","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"7.23139767204085E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"2.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,0,207)","size":11.040891647338867},{"label":"sunbaemee","x":590.5667114257812,"y":-1057.0252685546875,"id":"539","attributes":{"Out-Degree":"1","In-Degree":"1","Closeness Centrality":"0.5","Inferred Class":"27","Degree":"2","Eigenvector Centrality":"0.004705342977795791","Weighted In-Degree":"1.0","Betweenness Centrality":"1.0930753675465923E-5","PageRank":"6.247483437259293E-4","Harmonic Closeness Centrality":"0.5833333333333333","Weighted Degree":"2.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,0,207)","size":11.040891647338867},{"label":"lilujangkasep","x":140.07577514648438,"y":-447.42999267578125,"id":"231","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"NalarPolitik_","x":149.4954833984375,"y":-350.18975830078125,"id":"354","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"maulanarezaaa","x":-872.87158203125,"y":-1012.3003540039062,"id":"840","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"128","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"garistengah_id","x":-715.7640380859375,"y":741.2252807617188,"id":"458","attributes":{"Out-Degree":"3","In-Degree":"8","Closeness Centrality":"0.625","Inferred Class":"27","Degree":"11","Eigenvector Centrality":"0.04743571858056197","Weighted In-Degree":"10.0","Betweenness Centrality":"6.831721047166202E-5","PageRank":"0.0028833719967933094","Harmonic Closeness Centrality":"0.7","Weighted Degree":"14.0","Weighted Out-Degree":"4.0"},"color":"rgb(158,11,0)","size":15.724906921386719},{"label":"Faried_qonaah","x":-163.38148498535156,"y":356.5648193359375,"id":"607","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"newpersonnnnn","x":-691.9506225585938,"y":-99.23341369628906,"id":"663","attributes":{"Out-Degree":"2","In-Degree":"1","Closeness Centrality":"0.5","Inferred Class":"27","Degree":"3","Eigenvector Centrality":"0.00935381156732835","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.685328090669927E-4","Harmonic Closeness Centrality":"0.5740740740740741","Weighted Degree":"4.0","Weighted Out-Degree":"3.0"},"color":"rgb(153,0,255)","size":11.561338424682617},{"label":"yudhabjnugroho","x":-499.29144287109375,"y":-986.4978637695312,"id":"731","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"99","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"Leo_Nardi10","x":766.014404296875,"y":659.760009765625,"id":"113","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"gilabola_ina","x":1152.066162109375,"y":212.08535766601562,"id":"76","attributes":{"Out-Degree":"0","In-Degree":"17","Closeness Centrality":"0.0","Inferred Class":"27","Degree":"17","Eigenvector Centrality":"0.0562146277967978","Weighted In-Degree":"20.0","Betweenness Centrality":"0.0","PageRank":"0.006361345355738598","Harmonic Closeness Centrality":"0.0","Weighted Degree":"20.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,176,0)","size":18.847583770751953},{"label":"lyfesdgtrouble","x":-271.61920166015625,"y":-1094.3529052734375,"id":"851","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"jayhilgers","x":194.76620483398438,"y":346.2784423828125,"id":"133","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"Bimbelia","x":-1272.7027587890625,"y":-299.666748046875,"id":"486","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.3181818181818182","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.4047619047619047","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"Mako_Brimop","x":-374.48553466796875,"y":-6.061717987060547,"id":"153","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"gloriahermawan","x":762.1218872070312,"y":1000.2949829101562,"id":"303","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"Indri9614838740","x":887.3236083984375,"y":441.0811462402344,"id":"561","attributes":{"Out-Degree":"2","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"2","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"2.0","Weighted Out-Degree":"2.0"},"color":"rgb(255,0,207)","size":11.040891647338867},{"label":"dianaanr","x":-187.801025390625,"y":-326.0653381347656,"id":"563","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"artix_id","x":293.31585693359375,"y":-1386.1551513671875,"id":"701","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"91","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.28312481982923E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"wlfdeersh","x":-651.7702026367188,"y":617.375244140625,"id":"428","attributes":{"Out-Degree":"2","In-Degree":"2","Closeness Centrality":"0.4375","Inferred Class":"27","Degree":"4","Eigenvector Centrality":"0.011795104649539524","Weighted In-Degree":"2.0","Betweenness Centrality":"1.9128818932065367E-5","PageRank":"0.0010923012781023662","Harmonic Closeness Centrality":"0.5119047619047619","Weighted Degree":"6.0","Weighted Out-Degree":"4.0"},"color":"rgb(5,0,255)","size":12.08178424835205},{"label":"dwicn_","x":-133.1171875,"y":-438.3934020996094,"id":"625","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"wiyaah07","x":680.6908569335938,"y":-862.3262329101562,"id":"57","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.5833333333333334","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"amaulr","x":477.6130065917969,"y":-259.22607421875,"id":"126","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"cbarcelonafans","x":-760.5227661132812,"y":957.822021484375,"id":"28","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"1","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"andreirawan3218","x":-702.4229125976562,"y":-282.3051452636719,"id":"107","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"ballondor","x":-446.9725646972656,"y":-1106.5648193359375,"id":"732","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"99","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.28312481982923E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"mzulkiflimz","x":-56.436973571777344,"y":-1443.380859375,"id":"565","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"69","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.28312481982923E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"KakkoiRizal","x":1208.7066650390625,"y":138.55140686035156,"id":"275","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"baby__potato","x":-72.1227798461914,"y":553.521484375,"id":"648","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5555555555555556","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.6","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"law_ismylife","x":-474.8955383300781,"y":1213.529052734375,"id":"698","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"90","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"6.380229916156643E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"moonnliiighhttt","x":-1059.5399169921875,"y":612.2024536132812,"id":"646","attributes":{"Out-Degree":"0","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"79","Degree":"1","Eigenvector Centrality":"0.003306742811576341","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"8.28312481982923E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"1.0","Weighted Out-Degree":"0.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"indikatorcoid","x":-792.8505859375,"y":-1031.4990234375,"id":"836","attributes":{"Out-Degree":"1","In-Degree":"1","Closeness Centrality":"0.0","Inferred Class":"126","Degree":"2","Eigenvector Centrality":"0.004705342977795791","Weighted In-Degree":"2.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.0","Weighted Degree":"4.0","Weighted Out-Degree":"2.0"},"color":"rgb(255,0,207)","size":11.040891647338867},{"label":"dearjeonv_","x":-775.7344970703125,"y":-876.6012573242188,"id":"121","attributes":{"Out-Degree":"1","In-Degree":"1","Closeness Centrality":"1.0","Inferred Class":"12","Degree":"2","Eigenvector Centrality":"0.004705342977795791","Weighted In-Degree":"1.0","Betweenness Centrality":"0.0","PageRank":"0.002984021746025338","Harmonic Closeness Centrality":"1.0","Weighted Degree":"2.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,0,207)","size":11.040891647338867},{"label":"_AfsalMuhammad","x":-1060.1422119140625,"y":855.590087890625,"id":"661","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"1.0","Inferred Class":"83","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"1.0","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434},{"label":"rioagustio_","x":286.7366638183594,"y":-829.2724609375,"id":"32","attributes":{"Out-Degree":"1","In-Degree":"0","Closeness Centrality":"0.5","Inferred Class":"27","Degree":"1","Eigenvector Centrality":"0.0","Weighted In-Degree":"0.0","Betweenness Centrality":"0.0","PageRank":"4.4773350124840554E-4","Harmonic Closeness Centrality":"0.5833333333333334","Weighted Degree":"1.0","Weighted Out-Degree":"1.0"},"color":"rgb(255,29,0)","size":10.520445823669434}],"edges":[{"source":"378","target":"136","id":"380","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"127","target":"136","id":"128","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"457","target":"458","id":"462","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"645","target":"646","id":"718","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"442","target":"76","id":"443","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"573","target":"70","id":"576","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"539","target":"57","id":"540","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"231","target":"573","id":"232","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"354","target":"563","id":"356","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"840","target":"836","id":"914","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"458","target":"76","id":"463","attributes":{},"color":"rgb(158,11,0)","size":1.0},{"source":"458","target":"243","id":"464","attributes":{},"color":"rgb(158,11,0)","size":1.0},{"source":"607","target":"458","id":"608","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"663","target":"428","id":"736","attributes":{},"color":"rgb(153,0,255)","size":1.0},{"source":"663","target":"76","id":"737","attributes":{},"color":"rgb(153,0,255)","size":1.0},{"source":"731","target":"732","id":"806","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"113","target":"458","id":"115","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"851","target":"836","id":"925","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"133","target":"127","id":"134","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"486","target":"76","id":"487","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"153","target":"428","id":"156","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"303","target":"76","id":"304","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"561","target":"76","id":"564","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"561","target":"458","id":"562","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"563","target":"354","id":"566","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"701","target":"836","id":"775","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"428","target":"663","id":"431","attributes":{},"color":"rgb(5,0,255)","size":1.0},{"source":"428","target":"153","id":"430","attributes":{},"color":"rgb(5,0,255)","size":1.0},{"source":"625","target":"573","id":"626","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"57","target":"539","id":"59","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"126","target":"136","id":"129","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"28","target":"76","id":"29","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"107","target":"428","id":"108","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"732","target":"731","id":"807","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"565","target":"836","id":"567","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"275","target":"76","id":"278","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"648","target":"458","id":"721","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"698","target":"458","id":"772","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"646","target":"645","id":"719","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"836","target":"840","id":"912","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"836","target":"851","id":"924","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"836","target":"565","id":"568","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"836","target":"701","id":"776","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"121","target":"76","id":"122","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"121","target":"836","id":"123","attributes":{},"color":"rgb(255,0,207)","size":1.0},{"source":"661","target":"458","id":"734","attributes":{},"color":"rgb(255,29,0)","size":1.0},{"source":"32","target":"836","id":"35","attributes":{},"color":"rgb(255,29,0)","size":1.0}]}
 
-# ==============================================
-# SEMUA DEPENDENSI DISEMATKAN LANGSUNG DALAM KODE
-# ==============================================
 
-# 1. CSS Styles
-CSS_STYLE = """
-/* style.css */
-.sigma-parent {
-    position: relative;
-    width: 100%;
-    height: 100%;
-    border: 1px solid #ccc;
-}
+# Convert Python dict to JSON string for embedding in JavaScript
+json_data_str = json.dumps(data_json_content)
 
-.sigma-expand {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-}
+# HTML and JavaScript code to embed in Streamlit
+# Adjusted script loading order and used a more appropriate CDN for sigma.parseJson.js
+html_code = f"""
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-gb" lang="en" xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" itemscope itemtype="http://schema.org/Map">
 
-#mainpanel {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    background: rgba(255,255,255,0.9);
-    padding: 10px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.2);
-    z-index: 100;
-}
+<head>
+<title>OII Network Visualisation Example</title>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,height=device-height,initial-scale=1,user-scalable=no" />
+<meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 
-/* tablet.css */
-@media screen and (max-height: 770px) {
-    #mainpanel {
+<style>
+    /* Basic styling to make the canvas visible, adapted from original CSS */
+    body {{ margin: 0; overflow: hidden; font-family: sans-serif; }}
+    .sigma-parent {{ position: absolute; width: 100%; height: 100%; top: 0; left: 0; }}
+    .sigma-expand {{ position: absolute; width: 100%; height: 100%; top: 0; left: 0; }}
+    #mainpanel {{
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 15px;
+        border-radius: 8px;
+        z-index: 100;
+        max-height: 80%;
+        overflow-y: auto;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }}
+    #maintitle, #title, #titletext, #legend, #search, #attributeselect {{ margin-bottom: 10px; }}
+    h2 {{ margin-top: 0; font-size: 1.2em; color: #333; }}
+    a {{ text-decoration: none; color: #007bff; }}
+    a:hover {{ text-decoration: underline; }}
+    .cf::after {{ content: ""; display: table; clear: both; }} /* Clearfix */
+    #zoom {{
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        z-index: 100;
+        background: rgba(255, 255, 255, 0.8);
+        padding: 5px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }}
+    #zoom .z {{
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        margin: 5px;
+        display: inline-block;
+        border-radius: 3px;
+        font-weight: bold;
+        color: #555;
+    }}
+    #zoom .z:hover {{
+        background-color: #eee;
+    }}
+    #copyright, #developercontainer {{
+        position: absolute;
+        bottom: 20px;
+        left: 20px;
         font-size: 0.8em;
-    }
-}
+        color: #777;
+        z-index: 100;
+    }}
+    #developercontainer {{
+        left: auto;
+        right: 20px;
+        bottom: 60px; /* Adjust position to not overlap with zoom */
+    }}
+    #oii, #jisc {{
+        display: inline-block;
+        margin-left: 10px;
+        padding: 5px 10px;
+        background-color: #f8f8f8;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+    }}
+</style>
 
-/* Fancybox CSS */
-.fancybox-wrap, .fancybox-skin {
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 8020;
-}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script>
+
+</head>
+
+<body>
+    <div class="sigma-parent">
+        <div class="sigma-expand" id="sigma-canvas" style="background-color: #f0f0f0;"></div>
+    </div>
+    <div id="mainpanel">
+        <div class="col">
+            <div id="maintitle"><h2>OII Network Visualisation</h2></div>
+            <div id="title"></div>
+            <div id="titletext">This is an example network visualization.</div>
+            <div class="info cf">
+                <dl>
+                    <dt class="moreinformation"></dt>
+                    <dd class="line"><a href="#information" class="line fb">More about this visualisation</a></dd>
+                </dl>
+            </div>
+            <div id="legend">
+                <div class="box">
+                    <h2>Legend:</h2>
+                    <dl>
+                        <dt class="node">Node</dt>
+                        <dd>Represents an entity</dd>
+                        <dt class="edge">Edge</dt>
+                        <dd>Represents a connection</dd>
+                        <dt class="colours">Colours</dt>
+                        <dd>Indicate different groups</dd>
+                    </dl>
+                </div>
+            </div>
+            <div class="b1">
+                <form>
+                    <div id="search" class="cf"><h2>Search:</h2>
+                        <input type="text" name="search" value="Search by name" class="empty"/><div class="state"></div>
+                        <div class="results"></div>
+                    </div>
+                    <div class="cf" id="attributeselect"><h2>Group Selector:</h2>
+                        <div class="select">Select Group</div>
+                        <div class="list cf"></div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="information" style="display: none;">
+            <h3>Information about the Visualization</h3>
+            <p>This is a placeholder for detailed information about the network visualization. In the original HTML, this content would be dynamically loaded or expanded via Fancybox.</p>
+            <p>The network displays nodes and edges with attributes like degree, centrality, and inferred class. Nodes are colored based on their inferred class, and their size can reflect a metric like PageRank or degree.</p>
+            <p>Use the search bar to find specific nodes, and the group selector to filter by attributes. Zoom in/out using the controls or mouse wheel, and pan by dragging the network.</p>
+            <p>Clicking on a node might reveal more detailed information in an attribute pane (if implemented fully).</p>
+        </div>
+    </div>
+    <div id="zoom">
+        <div class="z" rel="in"><span>+</span></div>
+        <div class="z" rel="out"><span>-</span></div>
+        <div class="z" rel="center"><span>◎</span></div>
+    </div>
+    <div id="copyright">
+        <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" /></a>
+    </div>
+    <div id="developercontainer">
+        <a href="http://www.oii.ox.ac.uk" title="Oxford Internet Institute"><div id="oii"><span>OII</span></div></a>
+        <a href="http://jisc.ac.uk" title="JISC"><div id="jisc"><span>JISC</span></div></a>
+    </div>
+
+    <script type="text/javascript">
+        // Embed the JSON data directly
+        var jsonData = {json_data_str};
+
+        // Initialize Sigma.js
+        var s;
+        if (typeof sigma !== 'undefined') {{
+            s = new sigma({{
+                container: 'sigma-canvas',
+                settings: {{
+                    minNodeSize: 0.5,
+                    maxNodeSize: 5,
+                    minEdgeSize: 0.2,
+                    maxEdgeSize: 0.5,
+                    // Enable mouse wheel for zoom
+                    enableCamera: true,
+                    zoomMin: 0.1,
+                    zoomMax: 10,
+                    mouseEnabled: true, // Enable mouse interactions (pan, zoom)
+                    touchEnabled: true, // Enable touch interactions
+                    doubleClickEnabled: false // Disable double click zoom
+                }}
+            }});
+
+            // Load the data using sigma.parsers.json (since the original used sigma.parseJson.js)
+            // sigma.parsers.json expects a URL, but we have the data directly.
+            // So we will manually read the graph data.
+            s.graph.read(jsonData);
+
+            // Refresh the graph to apply changes
+            s.refresh();
+
+            // Basic zoom and center functionality
+            document.querySelector('#zoom .z[rel="in"]').addEventListener('click', function() {{
+                s.camera.goTo({{ratio: s.camera.ratio / 1.5}});
+            }});
+            document.querySelector('#zoom .z[rel="out"]').addEventListener('click', function() {{
+                s.camera.goTo({{ratio: s.camera.ratio * 1.5}});
+            }});
+            document.querySelector('#zoom .z[rel="center"]').addEventListener('click', function() {{
+                s.camera.goTo({{x: 0, y: 0, ratio: 1}});
+            }});
+
+            // Initialize Fancybox for the "More information" link
+            if (typeof $.fn.fancybox === 'function') {{
+                $(".line.fb").fancybox({{
+                    'autoDimensions': false,
+                    'width': 600,
+                    'height': 'auto',
+                    'transitionIn': 'none',
+                    'transitionOut': 'none',
+                    'type': 'inline',
+                    'href': '#information'
+                }});
+            }} else {{
+                console.warn("Fancybox not loaded. 'More information' link will not work as intended.");
+            }}
+
+            // Placeholder for search functionality (requires more complex JS)
+            var searchInput = document.querySelector('#search input[name="search"]');
+            var searchResults = document.querySelector('#search .results');
+            if (searchInput) {{
+                searchInput.addEventListener('input', function() {{
+                    var query = this.value.toLowerCase();
+                    s.graph.nodes().forEach(function(n) {{
+                        if (query === '' || n.label.toLowerCase().includes(query)) {{
+                            n.hidden = false;
+                        }} else {{
+                            n.hidden = true;
+                        }}
+                    }});
+                    s.refresh();
+                }});
+            }}
+
+        }} else {{
+            console.error("Sigma.js library not loaded. Please check CDN links.");
+        }}
+    </script>
+</body>
+</html>
 """
 
-# 2. JavaScript Libraries
-JQUERY_JS = """
-/* jquery.min.js - versi ringkas */
-!function(e,t){"use strict";"object"==typeof module&&"object"==typeof module.exports?module.exports=e.document?t(e,!0):function(e){if(!e.document)throw new Error("jQuery requires a window with a document");return t(e)}:t(e)}("undefined"!=typeof window?window:this,function(e,t){"use strict";var n=[],r=e.document,i=Object.getPrototypeOf,o=n.slice,a=n.concat,s=n.push,u=n.indexOf,l={},c=l.toString,f=l.hasOwnProperty,p=f.toString,d=p.call(Object),h={},g=function e(t){return"function"==typeof t&&"number"!=typeof t.nodeType},y=function e(t){return null!=t&&t===t.window},v={type:!0,src:!0,noModule:!0};function m(e,t,n){var i,o=(t=t||r).createElement("script");if(o.text=e,n)for(i in v)n[i]&&(o[i]=n[i]);t.head.appendChild(o).parentNode.removeChild(o)}function x(e){return null==e?e+"":"object"==typeof e||"function"==typeof e?l[c.call(e)]||"object":typeof e}var b="3.6.0",w=function(e,t){return new w.fn.init(e,t)},T=/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;w.fn=w.prototype={jquery:"3.6.0",constructor:w,length:0,toArray:function(){return o.call(this)},get:function(e){return null==e?o.call(this):e<0?this[e+this.length]:this[e]},pushStack:function(e){var t=w.merge(this.constructor(),e);return t.prevObject=this,t},each:function(e){return w.each(this,e)},map:function(e){return this.pushStack(w.map(this,function(t,n){return e.call(t,n,t)}))},slice:function(){return this.pushStack(o.apply(this,arguments))},first:function(){return this.eq(0)},last:function(){return this.eq(-1)},eq:function(e){var t=this.length,n=+e+(e<0?t:0);return this.pushStack(n>=0&&n<t?[this[n]]:[])},end:function(){return this.prevObject||this.constructor()},push:s,sort:n.sort,splice:n.splice},w.extend=w.fn.extend=function(){var e,t,n,r,i,o,a=arguments[0]||{},s=1,u=arguments.length,l=!1;for("boolean"==typeof a&&(l=a,a=arguments[s]||{},s++),"object"==typeof a||g(a)||(a={}),s===u&&(a=this,s--);s<u;s++)if(null!=(e=arguments[s]))for(t in e)n=a[t],a!==(r=e[t])&&(l&&r&&(w.isPlainObject(r)||(i=Array.isArray(r)))?(i?(i=!1,o=n&&Array.isArray(n)?n:[]):o=n&&w.isPlainObject(n)?n:{},a[t]=w.extend(l,o,r)):void 0!==r&&(a[t]=r));return a},w.extend({expando:"jQuery"+("3.6.0"+Math.random()).replace(/\D/g,""),isReady:!0,error:function(e){throw new Error(e)},noop:function(){},isPlainObject:function(e){var t,n;return!(!e||"[object Object]"!==c.call(e))&&(!(t=i(e))||"function"==typeof(n=f.call(t,"constructor")&&t.constructor)&&p.call(n)===d)},isEmptyObject:function(e){var t;for(t in e)return!1;return!0},globalEval:function(e,t,n){m(e,{nonce:t&&t.nonce},n)},each:function(e,t){var n,r=0;if(C(e)){for(n=e.length;r<n;r++)if(!1===t.call(e[r],r,e[r]))break}else for(r in e)if(!1===t.call(e[r],r,e[r]))break;return e},trim:function(e){return null==e?"":(e+"").replace(T,"")},makeArray:function(e,t){var n=t||[];return null!=e&&(C(Object(e))?w.merge(n,"string"==typeof e?[e]:e):s.call(n,e)),n},inArray:function(e,t,n){return null==t?-1:u.call(t,e,n)},merge:function(e,t){for(var n=+t.length,r=0,i=e.length;r<n;r++)e[i++]=t[r];return e.length=i,e},grep:function(e,t,n){for(var r=[],i=0,o=e.length,a=!n;i<o;i++)!t(e[i],i)!==a&&r.push(e[i]);return r},map:function(e,t,n){var r,i,s=0,u=[];if(C(e))for(r=e.length;s<r;s++)null!=(i=t(e[s],s,n))&&u.push(i);else for(s in e)null!=(i=t(e[s],s,n))&&u.push(i);return a.apply([],u)},guid:1,support:h}),"function"==typeof Symbol&&w.fn[Symbol.iterator]=n[Symbol.iterator],w.extend("isFunction",function(e){return"function"==typeof e}),w.each("Boolean Number String Function Array Date RegExp Object Error Symbol".split(" "),function(e,t){l["[object "+t+"]"]=t.toLowerCase()});function C(e){var t=!!e&&"length"in e&&e.length,n=x(e);return!g(e)&&!y(e)&&("array"===n||0===t||"number"==typeof t&&t>0&&t-1 in e)}var E=function(e){var t,n,r,i,o,a,s,u,l,c,f,p,d,h,g,y,v,m,x,b="sizzle"+1*new Date,w=e.document,T=0,C=0,E=ue(),k=ue(),S=ue(),D=ue(),N=function(e,t){return e===t&&(f=!0),0},A={}.hasOwnProperty,j=[],L=j.pop,q=j.push,H=j.push,O=j.slice,P=function(e,t){for(var n=0,r=e.length;n<r;n++)if(e[n]===t)return n;return-1},R="checked|selected|async|autofocus|autoplay|controls|defer|disabled|hidden|ismap|loop|multiple|open|readonly|required|scoped",M="[\\x20\\t\\r\\n\\f]",I="(?:\\\\[\\da-fA-F]{1,6}"+M+"?|\\\\[^\\r\\n\\f]|[\\w-]|[^\0-\\x7f])+",W="\\["+M+"*("+I+")(?:"+M+"*([*^$|!~]?=)"+M+"*(?:'((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\"|("+I+"))|)"+M+"*\\]",$=":("+I+")(?:\\((('((?:\\\\.|[^\\\\'])*)'|\"((?:\\\\.|[^\\\\\"])*)\")|((?:\\\\.|[^\\\\()[\\]]|"+W+")*)|.*)\\)|)",B=new RegExp(M+"+","g"),F=new RegExp("^"+M+"+|((?:^|[^\\\\])(?:\\\\.)*)"+M+"+$","g"),_=new RegExp("^"+M+"*,"+M+"*"),z=new RegExp("^"+M+"*([>+~]|"+M+")"+M+"*"),U=new RegExp(M+"|>"),X=new RegExp($),V=new RegExp("^"+I+"$"),G={ID:new RegExp("^#("+I+")"),CLASS:new RegExp("^\\.("+I+")"),TAG:new RegExp("^("+I+"|[*])"),ATTR:new RegExp("^"+W),PSEUDO:new RegExp("^"+$),CHILD:new RegExp("^:(only|first|last|nth|nth-last)-(child|of-type)(?:\\("+M+"*(even|odd|(([+-]|)(\\d*)n|)"+M+"*(?:([+-]|)"+M+"*(\\d+)|))"+M+"*\\)|)","i"),bool:new RegExp("^(?:"+R+")$","i"),needsContext:new RegExp("^"+M+"*[>+~]|:(even|odd|eq|gt|lt|nth|first|last)(?:\\("+M+"*((?:-\\d)?\\d*)"+M+"*\\)|)(?=[^-]|$)","i")},Y=/HTML$/i,Q=/^(?:input|select|textarea|button)$/i,J=/^h\d$/i,K=/^[^{]+\{\s*\[native \w/,Z=/^(?:#([\w-]+)|(\w+)|\.([\w-]+))$/,ee=/[+~]/,te=new RegExp("\\\\[\\da-fA-F]{1,6}"+M+"?|\\\\([^\\r\\n\\f])","g"),ne=function(e,t){var n="0x"+e.slice(1)-65536;return t||(n<0?String.fromCharCode(n+65536):String.fromCharCode(n>>10|55296,1023&n|56320))},re=/([\0-\x1f\x7f]|^-?\d)|^-$|[^\0-\x1f\x7f-\uFFFF\w-]/g,ie=function(e,t){return t?"\0"===e?"\ufffd":e.slice(0,-1)+"\\"+e.charCodeAt(e.length-1).toString(16)+" ":"\\"+e},oe=function(){T()},ae=be(function(e){return!0===e.disabled&&("form"in e||"label"in e)},{dir:"parentNode",next:"legend"});try{H.apply(j=O.call(w.childNodes),w.childNodes),j[w.childNodes.length].nodeType}catch(e){H={apply:j.length?function(e,t){q.apply(e,O.call(t))}:function(e,t){var n=e.length,r=0;while(e[n++]=t[r++]);e.length=n-1}}}function se(e,t,r,i){var o,a,s,u,l,c,f,p=t&&t.ownerDocument,d=t?t.nodeType:9;if(r=r||[],"string"!=typeof e||!e||1!==d&&9!==d&&11!==d)return r;if(!i&&((t?t.ownerDocument||t:w)!==E&&T(t),t=t||E,11===d&&!l)return o=Z.exec(e),o?(t.getElementById(o[1])?[t.getElementById(o[1])]:[]):r;if(!i&&!l)if(o=ee.exec(e))if(u=o[1]){if(9===d){if(!(s=t.getElementById(u)))return r;if(s.id===u)return r.push(s),r}else if(p&&(s=p.getElementById(u))&&y(t,s)&&s.id===u)return r.push(s),r}else{if(o[2])return H.apply(r,t.getElementsByTagName(e)),r;if((u=o[3])&&h.getElementsByClassName&&t.getElementsByClassName)return H.apply(r,t.getElementsByClassName(u)),r}return h.qsa&&!D[e+" "]&&(!v||!v.test(e))&&(1===d||"object"!==t.nodeName.toLowerCase())?(f=t,p=e,1===d&&U.test(e)&&(a=me(t),s=a.id,c=!s&&n++,s||(a.id=c||t.id),u=ge(e).map(function(e){return e.replace(re,ie)}),f=ee.test(e)&&ve(t)||t,u="[id='"+s+"'] "+u.join(",")),try{H.apply(r,f.querySelectorAll(u)),r}catch(e){}finally{c&&!a.id&&a.removeAttribute("id")}):ve(e.replace(F,"$1"),t,r,i)}function ue(){var e=[];return function t(n,i){return e.push(n+" ")>r.cacheLength&&delete t[e.shift()],t[n+" "]=i}}function le(e){return e[b]=!0,e}function ce(e){var t=E.createElement("fieldset");try{return!!e(t)}catch(e){return!1}finally{t.parentNode&&t.parentNode.removeChild(t),t=null}}function fe(e,t){var n=e.split("|"),i=n.length;while(i--)r.attrHandle[n[i]]=t}function pe(e,t){var n=t&&e,r=n&&1===e.nodeType&&1===t.nodeType&&e.sourceIndex-t.sourceIndex;if(r)return r;if(n)while(n=n.nextSibling)if(n===t)return-1;return e?1:-1}function de(e){return function(t){return"input"===t.nodeName.toLowerCase()&&t.type===e}}function he(e){return function(t){var n=t.nodeName.toLowerCase();return("input"===n||"button"===n)&&t.type===e}}function ge(e){var t=[];return function e(n,r){var i,o,a,s=n.length;if(!s)return t;for(i=0;i<s;i++)if(o=n[i],o)if(g(o)&&(a=o.nodeType,r&&(o.ownerDocument||o)!==E&&T(o),1===o.nodeType)){if(t.push(o),o.childNodes.length&&r){e(o.childNodes,r)}else if(a===1||a===9||a===11){var u=o.nodeName.toLowerCase();"script"!==u&&"style"!==u&&t.push(o)}}return t}(Array.isArray(e)?e:[e],!0)}function ye(e,t){return e=t||e,"none"===e.style.display||""===e.style.display&&h.contains(e.ownerDocument,e)&&"none"===h.css(e,"display")}function ve(e){var t,n,r=e.ownerDocument,i=e.nodeName,o=Y.test(i),a=!o&&"hidden"in e,s=o||"offsetHeight"in e;if(o)return!ye(e);if(a)return ye(e);t=r.documentElement,n=e.getBoundingClientRect(),i=(e.offsetParent||t).clientTop,(t=r.documentElement).clientTop;return n.top+e.clientTop-i<0}function me(e){var t,n,r=e.ownerDocument,i=e.nodeName,o=r.documentElement,a=o.clientTop||0;return"fixed"===h.css(e,"position")?e.getBoundingClientRect().top-a:(t=e.getBoundingClientRect(),n=e.ownerDocument.defaultView,(n?n.pageYOffset:o.scrollTop)-a+t.top)}function xe(e){return{top:e.top,left:e.left}}function be(e,t){var n="function"==typeof e?e:t,r="function"==typeof t?t:!1;return function(i){return i.matchesSelector(e)?n(i):r?void 0:be(e,n)}}function we(e,t){for(var n=e.parentNode;n&&n!==t;n=n.parentNode);return n===t}function Te(e,t){return e.parentNode&&e.parentNode.removeChild(e),t.insertBefore(e,t.firstChild),e}function Ce(e){var t=e&&e.parentNode;return t&&11!==t.nodeType?t:null}function Ee(e,t){var n=e?e.length:0;if(n)for(var r=0,i=0;r<n;r++)t(e[r],i++)}function ke(e,t){return t?Array.prototype.slice.call(e):e}function Se(e,t,n){var r=t.dir,i=n&&"parentNode"===r,o=C++;return t.first?function(t,n,o){while(t=t[r])if(1===t.nodeType||i)return e(t,n,o)}:function(t,n,a){var s,u,l,c=[S,o];if(a){while(t=t[r])if((1===t.nodeType||i)&&e(t,n,a))return!0}else while(t=t[r])if(1===t.nodeType||i){if(u=t[b]||(t[b]={}),(l=u[r])&&l[0]===S&&l[1]===o)return c[2]=l[2];if(u[r]=c,c[2]=e(t,n,a))return!0}}}function De(e){return e.length>1?function(t,n,r){var i=e.length;while(i--)if(!e[i](t,n,r))return!1;return!0}:e[0]}function Ne(e,t,n,r,i){var o,a=[],s=0,u=e.length,l=null!=t;for(;s<u;s++)(o=e[s])&&(!n||n(o,r,i))&&(a.push(o),l&&q.push(t[s]));return a}function Ae(e,t,n,r,i,o){return r&&!r[b]&&(r=Ae(r)),i&&!i[b]&&(i=Ae(i,o)),be(function(o,a,s,u){var l,c,f,p=[],d=[],h=a.length,g=o||Ee(t||"*",s.nodeType?[s]:s,[]),y=!e||!o&&t?g:Ne(g,p,e,s,u),v=n?i||(o?e:h||r)?[]:a:y;if(n&&n(y,v,s,u),r){l=Ne(v,d),r(l,[],s,u),c=l.length;while(c--)(f=l[c])&&(v[d[c]]=!(y[d[c]]=f))}if(o){if(i||e){if(i){l=[],c=v.length;while(c--)(f=v[c])&&l.push(y[c]=f);i(null,v=[],l,u)}c=v.length;while(c--)(f=v[c])&&(l=i?P(o,f):p[c])>-1&&(o[l]=!(a[l]=f))}}else v=Ne(v===a?v.splice(h,v.length):v),i?i(null,a,v,u):H.apply(a,v)})}function je(e){var t,n,r,i=e.length,o=r.relative[e[0].type],a=o||r.relative[" "],s=o?1:0,u=Se(function(e){return e===t},a,!0),l=Se(function(e){return P(t,e)>-1},a,!0),c=[function(e,n,r){var i=!o&&(r||n!==k)||((t=n).nodeType?u(e,n,r):l(e,n,r));return t=null,i}];for(;s<i;s++)if(n=r.relative[e[s].type])c=[Se(De(c),n)];else{if(n=r.filter[e[s].type].apply(null,e[s].matches),n[b]){for(r=++s;r<i&&!r.relative[e[r].type];r++);return Ae(s>1&&De(c),s>1&&ge(e.slice(0,s-1).join("")),s>1&&s<i&&ge(e.slice(s,r)),r<i&&je(e.slice(r,i)),s>1&&je(e.slice(0,s-1)),n}if(n.length>1)c.push.apply(c,n);else c.push(n)}return De(c)}function Le(e,t){var n=0,i=t.length>0,o=e.length>0,a=function(a,s,u,l,c){var f,p,d,h=[],g=0,y="0",v=a&&[],m=null!=c,x=k,b=a||o&&r.find.TAG("*",c&&s.parentNode||s),w=S+=null==x?1:Math.random()||.1;for(m&&(k=s!==E&&s,T=n);null!=(f=b[y]);y++){if(o&&f){p=0;while(d=e[p++])if(d(f,s,u)){l.push(f);break}m&&(S=w,T=++n)}i&&((f=!d&&f)&&g--,a&&v.push(f))}if(g+=y,i&&y!==g){p=0;while(d=t[p++])d(v,h,s,u);if(a){if(g>0)while(y--)v[y]||h[y]||(h[y]=L.call(l));h=Ne(h)}H.apply(l,h),m&&!a&&h.length>0&&g>1&&oe.uniqueSort(l)}return m&&(S=w,k=x),v};return i?be(a):a}function qe(e){return e.length>1?function(t,n,r){var i=e.length;while(i--)if(!e[i](t,n,r))return!1;return!0}:e[0]}function He(e,t,n){var r=0,i=t.length;for(;r<i;r++)se(e,t[r],n);return n}function Oe(e,t,n,r,i){var o,a,s,u=[],l=0,c=e.length,f=null!=t;for(;l<c;l++)(o=e[l])&&(n&&!n(o,r,i)||(u.push(o),f&&q.push(t[l])));return u}function Pe(e,t,n,r,i,o){return r&&!r[b]&&(r=Pe(r)),i&&!i[b]&&(i=Pe(i,o)),be(function(o,a,s,u){var l,c,f,p=[],d=[],h=a.length,g=o||Ee(t||"*",s.nodeType?[s]:s,[]),y=!e||!o&&t?g:Oe(g,p,e,s,u),v=n?i||(o?e:h||r)?[]:a:y;if(n&&n(y,v,s,u),r){l=Oe(v,d),r(l,[],s,u),c=l.length;while(c--)(f=l[c])&&(v[d[c]]=!(y[d[c]]=f))}if(o){if(i||e){if(i){l=[],c=v.length;while(c--)(f=v[c])&&l.push(y[c]=f);i(null,v=[],l,u)}c=v.length;while(c--)(f=v[c])&&(l=i?P(o,f):p[c])>-1&&(o[l]=!(a[l]=f))}}else v=Oe(v===a?v.splice(h,v.length):v),i?i(null,a,v,u):H.apply(a,v)})}function Re(e){var t,n,r,i=e.length,o=r.relative[e[0].type],a=o||r.relative[" "],s=o?1:0,u=Se(function(e){return e===t},a,!0),l=Se(function(e){return P(t,e)>-1},a,!0),c=[function(e,n,r){var i=!o&&(r||n!==k)||((t=n).nodeType?u(e,n,r):l(e,n,r));return t=null,i}];for(;s<i;s++)if(n=r.relative[e[s].type])c=[Se(qe(c),n)];else{if(n=r.filter[e[s].type].apply(null,e[s].matches),n[b]){for(r=++s;r<i&&!r.relative[e[r].type];r++);return Pe(s>1&&qe(c),s>1&&ge(e.slice(0,s-1).join("")),s>1&&s<i&&ge(e.slice(s,r)),r<i&&Re(e.slice(r,i)),s>1&&Re(e.slice(0,s-1)),n}if(n.length>1)c.push.apply(c,n);else c.push(n)}return qe(c)}function Me(e,t){var n=t.length>0,i=e.length>0,o=function(o,a,s,u,l){var c,f,p,d=0,h="0",g=o&&[],y=[],v=k,m=o||i&&r.find.TAG("*",l),x=S+=null==v?1:Math.random()||.1,b=null!=l;for(b&&(k=a!==E&&a,T=n);null!=(c=m[h]);h++){if(i&&c){f=0;while(p=e[f++])if(p(c,a,s)){u.push(c);break}b&&(S=x,T=++n)}n&&((c=!p&&c)&&d--,o&&g.push(c))}if(d+=h,n&&h!==d){f=0;while(p=t[f++])p(g,y,a,s);if(o){if(d>0)while(h--)g[h]||y[h]||(y[h]=L.call(u));y=Oe(y)}H.apply(u,y),b&&!o&&y.length>0&&d>1&&oe.uniqueSort(u)}return b&&(S=x,k=v),g};return n?be(o):o}function Ie(e){return function(t){return"form"in t?t.parentNode&&!1===t.disabled?"label"in t?"label"in t.parentNode?t.parentNode.disabled===e:t.disabled===e:t.isDisabled===e||t.isDisabled!==!e&&ae(t)===e:t.disabled===e:"label"in t&&t.disabled===e}}function We(e){return le(function(t){return t=+t,le(function(n,r){var i,o=e([],n.length,t),a=o.length;while(a--)n[i=o[a]]&&(n[i]=!(r[i]=n[i]))})})}function $e(e){return e&&"undefined"!=typeof e.getElementsByTagName&&e}function Be(){}function Fe(e){var t,n,r,i,o,a=[],s=[],u=N.test(e)+" ",l=e+" ",c=0,f=0;for(t=(e=$e(e)||e).nodeType?[e]:e;null!=(r=t[c]);c++)if(1===r.nodeType){for(o=r.getAttribute("id"),o=o&&o.replace(re,ie),a[o]=r,i=r.getElementsByTagName("*"),n=0;n<i.length;n++)o=i[n].getAttribute("id"),o&&(a[o]=i[n]);if(u){for(n=0;n<i.length;n++)s.push(i[n]);s.push(r)}}return{context:t,selector:l,results:a,unique:f,set:s}}function _e(e,t,n){var r=[],i=[],o=0,a=e.length;for(;o<a;o++){var s=e[o];s.style&&(r.push(s),i.push(s.style.display),s.style.display=t?"none":""}n&&n(),o=0;for(;o<r.length;o++)r[o].style.display=i[o];return e}function ze(e,t,n,r,i){return new ze.prototype.init(e,t,n,r,i)}function Ue(e,t){var n,r,i=typeof t;return null==t||"boolean"===i?t:"number"===i?t.toString():"string"===i?(n=t.toLowerCase())===!1||"false"===n?!1:t===!0||"true"===n?!0:isNaN(t)?t:+t:"function"===i?t.toString():t}function Xe(e){return"string"==typeof e?e:e instanceof String?e.toString():""+e}function Ve(e){return e&&"object"==typeof e&&"length"in e&&e.length!==+e.length&&!w.isFunction(e)?w.makeArray(e):null==e?[]:"string"==typeof e?[e]:Array.isArray(e)?e:[e]}function Ge(e,t,n){var r,i,o,a,s=e.style;return n=n||we(e),n&&(a=n.getPropertyValue(t)||n[t]),""!==a&&void 0!==a||y(e)||(a=w.style(e,t)),n&&!h.pixelMarginRight()&&G.test(a)&&R.test(t)&&(r=s.width,i=s.minWidth,o=s.maxWidth,s.minWidth=s.maxWidth=s.width=a,a=n.width,s.width=r,s.minWidth=i,s.maxWidth=o),void 0!==a?a+"":a}function Ye(e,t){return{get:function(){return e()?void delete this.get:(this.get=t).apply(this,arguments)}}}function Qe(e){if(e in j)return e;var t=e[0].toUpperCase()+e.slice(1),n=0,r=R.length;for(;n<r;n++){var i=R[n]+t;if(i in j)return i}}function Je(e,t,n){var r=W.exec(t);return r?Math.max(0,r[1]-(n||0))+(r[2]||"px"):t}function Ke(e,t,n,r,i){var o=n===(r?"border":"content")?4:"width"===t?1:0,a=0;for(;o<4;o+=2)"margin"===n&&(a+=w.css(e,n+V[o],!0,i)),r?("content"===n&&(a-=w.css(e,"padding"+V[o],!0,i)),"margin"!==n&&(a-=w.css(e,"border"+V[o]+"Width",!0,i))):(a+=w.css(e,"padding"+V[o],!0,i),"padding"!==n&&(a+=w.css(e,"border"+V[o]+"Width",!0,i));return a}function Ze(e,t,n){var r=!0,i="width"===t?e.offsetWidth:e.offsetHeight,o=we(e),a=h.boxSizing()&&"border-box"===w.css(e,"boxSizing",!1,o);if(i<=0||null==i){if(i=Ge(e,t,o),(i<0||null==i)&&(i=e.style[t]),G.test(i))return i;r=a&&(h.boxSizingReliable()||i===e.style[t]),i=parseFloat(i)||0}return i+Ke(e,t,n||(a?"border":"content"),r,o)+"px"}function et(e,t,n,r,i){return new et.prototype.init(e,t,n,r,i)}function tt(e,t){var n,r={};for(n in t)r[n]=e.style[n],e.style[n]=t[n];return function(){for(n in t)e.style[n]=r[n]}}function nt(e,t,n,r){var i,o,a=20,s=r?function(){return r.cur()}:function(){return w.css(e,t,"")},u=s(),l=n&&n[3]||(w.cssNumber[t]?"":"px"),c=(w.cssNumber[t]||"px"!==l&&+u)&&W.exec(w.css(e,t));if(c&&c[3]!==l){u/=2,l=l||c[3],c=+u||1;while(a--)w.style(e,t,c+l),(1-o)*(1-(o=s()/u||.5))<=0&&(a=0),c/=o;c*=2,w.style(e,t,c+l),n=n||[]}return n&&(c=+c||+u||0,i=n[1]?c+(n[1]+1)*n[2]:+n[2],r&&(r.unit=l,r.start=c,r.end=i)),i}function rt(e){var t,n=e.ownerDocument,r=e.nodeName,i=Y.test(r);return n?(t=n.defaultView):e.parentNode&&(t=e.parentNode.ownerDocument.defaultView),t&&t.getComputedStyle&&!i?t.getComputedStyle(e,null):{}}function it(e,t,n){var r,i,o,a,s=e.style;return n=n||we(e),o=n?n.getPropertyValue(t)||n[t]:void 0,""!==o&&void 0!==o||y(e)||(o=w.style(e,t)),n&&!h.pixelMarginRight()&&G.test(o)&&R.test(t)&&(r=s.width,i=s.minWidth,a=s.maxWidth,s.minWidth=s.maxWidth=s.width=o,o=n.width,s.width=r,s.minWidth=i,s.maxWidth=a),void 0!==o?o+"":o}function ot(e,t){return{get:function(){if(!e())return(this.get=t).apply(this,arguments);delete this.get}}}function at(){var e,t,n=0,r=arguments.length;for(e={};n<r;n++)if(t=arguments[n])for(var i in t)e[i]=t[i];return e}function st(e,t,n){var r,i,o,a,s,u,l=this,c={},f=e.style,p=e.nodeType&&ye(e),d=w._data(e,"fxshow");n.queue||(s=w._queueHooks(e,"fx"),null==s.unqueued&&(s.unqueued=0,u=s.empty.fire,s.empty.fire=function(){s.unqueued||u()}),s.unqueued++,l.always(function(){l.always(function(){s.unqueued--,w.queue(e,"fx").length||s.empty.fire()})})),1===e.nodeType&&("height"in t||"width"in t)&&(n.overflow=[f.overflow,f.overflowX,f.overflowY],"inline"===w.css(e,"display")&&"none"===w.css(e,"float")&&(h.inlineBlockNeedsLayout()&&"inline"!==rt(e.nodeName).display?f.zoom=1:f.display="inline-block")),n.overflow&&(f.overflow="hidden",h.shrinkWrapBlocks()||l.always(function(){f.overflow=n.overflow[0],f.overflowX=n.overflow[1],f
+st.set_page_config(layout="wide")
+st.title("OII Network Visualisation Example (Streamlit)")
+
+st.write("""
+This is a Streamlit adaptation of the provided HTML network visualization.
+The graph data from `data.json` has been successfully loaded and embedded.
+""")
+
+# Render the HTML component
+components.html(html_code, height=800, scrolling=True)
+
+st.info("""
+**Note on functionality:**
+This version addresses the `sigma.parsers is undefined` error by ensuring the correct loading order of Sigma.js and its JSON parser plugin from CDNs.
+Basic interactive elements like zoom buttons and a placeholder search bar are included.
+For advanced interactions (like the full search/filter logic from the original `main.js`) and complete styling,
+you might still need to replicate or embed the exact content of the original JavaScript and CSS files,
+as these CDNs provide generic library versions.
+""")
