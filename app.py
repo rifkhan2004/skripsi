@@ -36,40 +36,42 @@ html_code = f"""
         position: absolute;
         top: 20px;
         left: 20px;
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.9);
         padding: 15px;
         border-radius: 8px;
         z-index: 100;
         max-height: 80%;
         overflow-y: auto;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        width: 280px; /* Lebar panel utama */
+        width: 280px;
     }}
     #maintitle, #title, #titletext, #legend, #search, #attributeselect {{ margin-bottom: 10px; }}
     h2 {{ margin-top: 0; font-size: 1.2em; color: #333; }}
     a {{ text-decoration: none; color: #007bff; }}
     a:hover {{ text-decoration: underline; }}
-    .cf::after {{ content: ""; display: table; clear: both; }} /* Clearfix */
+    .cf::after {{ content: ""; display: table; clear: both; }}
 
     /* Node Attributes Panel */
     #node-attributes-panel {{
         position: absolute;
         top: 20px;
-        left: 320px; /* Posisikan di sebelah kanan mainpanel */
-        background: rgba(255, 255, 255, 0.9);
+        right: 20px;
+        background: rgba(255, 255, 255, 0.95);
         padding: 15px;
         border-radius: 8px;
-        z-index: 90; /* Sedikit di bawah mainpanel */
+        z-index: 90;
         max-height: 80%;
         overflow-y: auto;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-        width: 300px; /* Lebar panel atribut node */
-        display: none; /* Sembunyikan secara default */
-        border-left: 1px solid #ccc; /* Pemisah visual */
+        width: 300px;
+        display: none;
+        border: 1px solid #ddd;
     }}
     #node-attributes-panel h3 {{
         margin-top: 0;
         color: #333;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 8px;
     }}
     #node-attributes-panel dl {{
         margin: 0;
@@ -77,31 +79,34 @@ html_code = f"""
     }}
     #node-attributes-panel dt {{
         font-weight: bold;
-        margin-top: 8px;
+        margin-top: 10px;
         color: #555;
     }}
     #node-attributes-panel dd {{
         margin-left: 0;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
         padding-left: 10px;
         border-left: 3px solid #007bff;
+        word-break: break-word;
     }}
-    #node-attributes-panel .connections-list ul {{
-        list-style-type: none;
-        padding: 0;
+    #node-connections {{
+        margin-top: 15px;
+        padding-top: 10px;
+        border-top: 1px dashed #ccc;
     }}
-    #node-attributes-panel .connections-list li {{
-        margin-bottom: 3px;
-        padding: 2px 0;
+    .connection-item {{
+        margin-bottom: 5px;
+        padding: 5px;
+        background: #f5f5f5;
+        border-radius: 3px;
     }}
-
 
     #zoom {{
         position: absolute;
         bottom: 20px;
         right: 20px;
         z-index: 100;
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.9);
         padding: 5px;
         border-radius: 5px;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
@@ -133,7 +138,7 @@ html_code = f"""
     #developercontainer {{
         left: auto;
         right: 20px;
-        bottom: 60px; /* Adjust position to not overlap with zoom */
+        bottom: 60px;
     }}
     #oii, #jisc {{
         display: inline-block;
@@ -147,6 +152,8 @@ html_code = f"""
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.renderers.customShapes.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fancybox/2.1.5/jquery.fancybox.pack.js"></script>
 
 </head>
@@ -170,9 +177,9 @@ html_code = f"""
                 <div class="box">
                     <h2>Legenda:</h2>
                     <dl>
-                        <dt class="node">Node</dt>
+                        <dt style="color: #1f77b4;">Node</dt>
                         <dd>Mewakili entitas</dd>
-                        <dt class="edge">Edge</dt>
+                        <dt style="color: #999;">Edge</dt>
                         <dd>Mewakili koneksi</dd>
                         <dt class="colours">Warna</dt>
                         <dd>Menunjukkan kelompok yang berbeda</dd>
@@ -182,45 +189,37 @@ html_code = f"""
             <div class="b1">
                 <form>
                     <div id="search" class="cf"><h2>Cari:</h2>
-                        <input type="text" name="search" value="Cari berdasarkan nama" class="empty"/><div class="state"></div>
+                        <input type="text" name="search" value="" placeholder="Cari berdasarkan nama" class="empty"/>
+                        <div class="state"></div>
                         <div class="results"></div>
-                    </div>
-                    <div class="cf" id="attributeselect"><h2>Pemilih Grup:</h2>
-                        <div class="select">Pilih Grup</div>
-                        <div class="list cf"></div>
                     </div>
                 </form>
             </div>
         </div>
         <div id="information" style="display: none;">
             <h3>Informasi tentang Visualisasi</h3>
-            <p>Ini adalah placeholder untuk informasi terperinci tentang visualisasi jaringan. Dalam HTML asli, konten ini akan dimuat atau diperluas secara dinamis melalui Fancybox.</p>
-            <p>Jaringan menampilkan node dan edge dengan atribut seperti degree, centrality, dan inferred class. Node diwarnai berdasarkan kelas yang disimpulkan, dan ukurannya dapat mencerminkan metrik seperti PageRank atau degree.</p>
-            <p>Gunakan bilah pencarian untuk menemukan node tertentu, dan pemilih grup untuk memfilter berdasarkan atribut. Perbesar/perkecil menggunakan kontrol atau roda mouse, dan geser dengan menyeret jaringan.</p>
-            <p>Mengklik node mungkin mengungkapkan informasi lebih rinci di panel atribut (jika diimplementasikan sepenuhnya).</p>
+            <p>Visualisasi jaringan ini menampilkan hubungan antara berbagai entitas.</p>
+            <p>Klik pada node untuk melihat detail dan koneksinya.</p>
         </div>
     </div>
 
     <div id="node-attributes-panel">
         <h3>Atribut Node: <span id="node-label"></span></h3>
         <dl id="node-details"></dl>
-        <div class="connections-list">
-            <h4>Connections:</h4>
-            <ul id="connected-nodes-list"></ul>
+        <div id="node-connections">
+            <h4>Koneksi:</h4>
+            <div id="connections-list"></div>
         </div>
     </div>
 
     <div id="zoom">
-        <div class="z" rel="in"><span>+</span></div>
-        <div class="z" rel="out"><span>-</span></div>
-        <div class="z" rel="center"><span>◎</span></div>
+        <div class="z" rel="in" title="Perbesar"><span>+</span></div>
+        <div class="z" rel="out" title="Perkecil"><span>-</span></div>
+        <div class="z" rel="center" title="Pusatkan"><span>◎</span></div>
+        <div class="z" rel="reset" title="Reset Zoom"><span>↻</span></div>
     </div>
     <div id="copyright">
         <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/3.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/3.0/88x31.png" /></a>
-    </div>
-    <div id="developercontainer">
-        <a href="http://www.oii.ox.ac.uk" title="Oxford Internet Institute"><div id="oii"><span>OII</span></div></a>
-        <a href="http://jisc.ac.uk" title="JISC"><div id="jisc"><span>JISC</span></div></a>
     </div>
 
     <script type="text/javascript">
@@ -235,177 +234,240 @@ html_code = f"""
             var nodeAttributesPanel = document.getElementById('node-attributes-panel');
             var nodeLabelSpan = document.getElementById('node-label');
             var nodeDetailsDl = document.getElementById('node-details');
-            var connectedNodesList = document.getElementById('connected-nodes-list');
+            var connectionsList = document.getElementById('connections-list');
 
             if (typeof sigma !== 'undefined') {{
                 try {{
+                    // Konfigurasi Sigma.js
                     s = new sigma({{
                         container: container,
                         settings: {{
-                            minNodeSize: 0.5,
-                            maxNodeSize: 5,
-                            minEdgeSize: 0.2,
-                            maxEdgeSize: 0.5,
-                            enableCamera: true, // Pastikan ini true
-                            zoomMin: 0.1,
-                            zoomMax: 10,
-                            mouseEnabled: true, // Pastikan ini true
-                            touchEnabled: true, // Pastikan ini true
-                            doubleClickEnabled: false,
-                            labelThreshold: 8,
-                            autoRescale: false, // Penting untuk interaksi manual, matikan auto-rescale
-                            // renderer: {{ // Tambahkan ini jika ada masalah rendering
-                            //     container: document.getElementById('sigma-canvas'),
-                            //     type: 'canvas'
-                            // }}
+                            minNodeSize: 3,
+                            maxNodeSize: 15,
+                            minEdgeSize: 0.5,
+                            maxEdgeSize: 2,
+                            enableCamera: true,
+                            zoomMin: 0.05,
+                            zoomMax: 20,
+                            mouseEnabled: true,
+                            touchEnabled: true,
+                            doubleClickEnabled: true,
+                            labelThreshold: 5,
+                            defaultLabelSize: 14,
+                            labelSize: 'proportional',
+                            labelSizeRatio: 1,
+                            drawLabels: true,
+                            mouseWheelEnabled: true,
+                            sideMargin: 2
                         }}
                     }});
 
                     console.log("Instansi Sigma dibuat.");
 
+                    // Muat data grafik
                     s.graph.read(jsonData);
                     console.log("Data grafik dimuat. Node:", s.graph.nodes().length, "Edge:", s.graph.edges().length);
+
+                    // Hitung ukuran node berdasarkan degree jika tidak ada ukuran yang ditentukan
+                    s.graph.nodes().forEach(function(node) {{
+                        if (!node.size) {{
+                            node.size = Math.log(s.graph.degree(node.id) + 1;
+                        }}
+                        if (!node.color) {{
+                            node.color = '#1f77b4';
+                        }}
+                        if (!node.label && node.attributes && node.attributes.name) {{
+                            node.label = node.attributes.name;
+                        }}
+                    }});
+
+                    // Atur warna edge jika tidak ada
+                    s.graph.edges().forEach(function(edge) {{
+                        if (!edge.color) {{
+                            edge.color = '#999';
+                        }}
+                    }});
 
                     s.refresh();
                     console.log("Grafik Sigma diperbarui.");
 
-                    // Fungsionalitas zoom dan pusat dasar
+                    // Fungsionalitas zoom
                     document.querySelector('#zoom .z[rel="in"]').addEventListener('click', function() {{
-                        s.camera.goTo({{ratio: s.camera.ratio / 1.5}});
+                        s.camera.goTo({{ ratio: s.camera.ratio / 1.5 }});
                     }});
                     document.querySelector('#zoom .z[rel="out"]').addEventListener('click', function() {{
-                        s.camera.goTo({{ratio: s.camera.ratio * 1.5}});
+                        s.camera.goTo({{ ratio: s.camera.ratio * 1.5 }});
                     }});
                     document.querySelector('#zoom .z[rel="center"]').addEventListener('click', function() {{
-                        s.camera.goTo({{x: 0, y: 0, ratio: 1}});
+                        s.camera.goTo({{ x: 0, y: 0, ratio: 1 }});
                     }});
-
-                    // Inisialisasi Fancybox
-                    if (typeof $.fn.fancybox === 'function') {{
-                        $(".line.fb").fancybox({{
-                            'autoDimensions': false,
-                            'width': 600,
-                            'height': 'auto',
-                            'transitionIn': 'none',
-                            'transitionOut': 'none',
-                            'type': 'inline',
-                            'href': '#information'
-                        }});
-                        console.log("Fancybox diinisialisasi.");
-                    }} else {{
-                        console.warn("Fancybox tidak dimuat. Tautan 'Informasi lebih lanjut' tidak akan berfungsi seperti yang diharapkan.");
-                    }}
+                    document.querySelector('#zoom .z[rel="reset"]').addEventListener('click', function() {{
+                        s.camera.goTo({{ x: 0, y: 0, ratio: 1, angle: 0 }});
+                    }});
 
                     // Fungsionalitas pencarian
                     var searchInput = document.querySelector('#search input[name="search"]');
                     if (searchInput) {{
                         searchInput.addEventListener('input', function() {{
-                            var query = this.value.toLowerCase();
+                            var query = this.value.toLowerCase().trim();
                             s.graph.nodes().forEach(function(n) {{
-                                if (query === '' || (n.label && n.label.toLowerCase().includes(query))) {{
+                                var label = n.label || n.id || '';
+                                if (query === '' || label.toLowerCase().includes(query)) {{
                                     n.hidden = false;
+                                    n.color = n.originalColor || '#1f77b4';
                                 }} else {{
                                     n.hidden = true;
                                 }}
                             }});
                             s.refresh();
-                            // Sembunyikan panel atribut saat pencarian baru
-                            nodeAttributesPanel.style.display = 'none';
                         }});
-                        console.log("Pendengar acara input pencarian ditambahkan.");
                     }}
 
-                    // === Fungsionalitas Baru: Klik Node untuk Menampilkan Atribut dan Koneksi ===
-                    s.bind('clickNode', function(e) {{
-                        var node = e.data.node;
-                        var nodeId = node.id;
-                        console.log("Node diklik:", node.label || node.id);
-
-                        // === Tampilkan Atribut Node ===
+                    // Fungsi untuk menampilkan detail node dan koneksinya
+                    function showNodeDetails(node) {{
+                        // Tampilkan panel atribut
                         nodeAttributesPanel.style.display = 'block';
-                        nodeLabelSpan.textContent = node.label || node.id;
+
+                        // Perbarui label node di panel
+                        nodeLabelSpan.textContent = node.label || node.id || node.attributes?.name || 'Node ' + node.id;
+
+                        // Bersihkan detail sebelumnya
                         nodeDetailsDl.innerHTML = '';
+                        connectionsList.innerHTML = '';
+
+                        // Tampilkan atribut node
                         var attributesToShow = node.attributes || node;
+                        var excludedProps = ['x', 'y', 'size', 'color', 'id', 'label', 'hidden', 'originalColor'];
 
                         for (var key in attributesToShow) {{
-                            if (attributesToShow.hasOwnProperty(key)) {{
-                                if (key === 'x' || key === 'y' || key === 'size' || key === 'color' || key === 'id' || key === 'label') {{
-                                    continue;
-                                }}
+                            if (attributesToShow.hasOwnProperty(key) && !excludedProps.includes(key)) {{
                                 var dt = document.createElement('dt');
-                                dt.textContent = key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str){{ return str.toUpperCase(); }});
+                                dt.textContent = key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str){{ 
+                                    return str.toUpperCase(); 
+                                }});
+                                
                                 var dd = document.createElement('dd');
-                                dd.textContent = attributesToShow[key];
+                                var value = attributesToShow[key];
+                                dd.textContent = (value !== null && value !== undefined) ? value.toString() : 'N/A';
                                 nodeDetailsDl.appendChild(dt);
                                 nodeDetailsDl.appendChild(dd);
                             }}
                         }}
 
-                        // === Tampilkan Koneksi (Neighbors) ===
-                        connectedNodesList.innerHTML = ''; // Bersihkan daftar koneksi sebelumnya
+                        // Tampilkan koneksi node
                         var connectedNodes = [];
-                        var nodesToDisplay = {}; // Untuk menyimpan node yang harus ditampilkan (node yang diklik + tetangga)
-                        var edgesToDisplay = {}; // Untuk menyimpan edge yang harus ditampilkan (edge yang terhubung)
+                        var connectedEdges = s.graph.edges().filter(function(edge) {{
+                            return edge.source === node.id || edge.target === node.id;
+                        }});
 
-                        // Tambahkan node yang diklik ke daftar yang akan ditampilkan
-                        nodesToDisplay[nodeId] = true;
-
-                        s.graph.edges().forEach(function(edge) {{
-                            if (edge.source === nodeId) {{
-                                // Jika edge dimulai dari node yang diklik
-                                var targetNode = s.graph.nodes(edge.target);
-                                if (targetNode) {{
-                                    connectedNodes.push(targetNode.label || targetNode.id);
-                                    nodesToDisplay[targetNode.id] = true;
-                                    edgesToDisplay[edge.id] = true;
-                                }}_
-                            }} else if (edge.target === nodeId) {{
-                                // Jika edge berakhir di node yang diklik
-                                var sourceNode = s.graph.nodes(edge.source);
-                                if (sourceNode) {{
-                                    connectedNodes.push(sourceNode.label || sourceNode.id);
-                                    nodesToDisplay[sourceNode.id] = true;
-                                    edgesToDisplay[edge.id] = true;
-                                }}
+                        connectedEdges.forEach(function(edge) {{
+                            var otherNodeId = edge.source === node.id ? edge.target : edge.source;
+                            var otherNode = s.graph.nodes(otherNodeId);
+                            if (otherNode) {{
+                                connectedNodes.push(otherNode);
+                                
+                                var connectionItem = document.createElement('div');
+                                connectionItem.className = 'connection-item';
+                                
+                                var direction = edge.source === node.id ? '→' : '←';
+                                if (edge.source === edge.target) direction = '↔';
+                                
+                                connectionItem.innerHTML = `
+                                    <strong>${{direction}} ${{otherNode.label || otherNode.id || 'Node ' + otherNode.id}}</strong>
+                                    ${{edge.attributes?.type || edge.type || ''}}
+                                `;
+                                
+                                connectionItem.style.cursor = 'pointer';
+                                connectionItem.addEventListener('click', function() {{
+                                    // Fokus ke node yang terhubung
+                                    s.camera.goTo({{
+                                        x: otherNode.x,
+                                        y: otherNode.y,
+                                        ratio: 0.5
+                                    }});
+                                    
+                                    // Highlight node yang terhubung
+                                    s.graph.nodes().forEach(function(n) {{
+                                        n.color = n.originalColor || '#1f77b4';
+                                    }});
+                                    otherNode.originalColor = otherNode.color;
+                                    otherNode.color = '#ff7f0e';
+                                    s.refresh();
+                                }});
+                                
+                                connectionsList.appendChild(connectionItem);
                             }}
                         }});
 
-                        connectedNodes.forEach(function(neighborLabel) {{
-                            var li = document.createElement('li');
-                            li.textContent = neighborLabel;
-                            connectedNodesList.appendChild(li);
-                        }});
-
-                        // === Saring Tampilan Grafik (Hanya Node yang Diklik + Tetangga yang Terlihat) ===
+                        // Highlight node yang sedang dilihat
                         s.graph.nodes().forEach(function(n) {{
-                            n.hidden = !nodesToDisplay[n.id];
+                            n.color = n.originalColor || '#1f77b4';
                         }});
-                        s.graph.edges().forEach(function(e) {{
-                            e.hidden = !edgesToDisplay[e.id];
-                        }});
-                        s.refresh(); // Penting: segarkan grafik setelah menyembunyikan/menampilkan
+                        node.originalColor = node.color;
+                        node.color = '#d62728';
+                        s.refresh();
+                    }}
+
+                    // Event klik node
+                    s.bind('clickNode', function(e) {{
+                        console.log("Node diklik:", e.data.node);
+                        showNodeDetails(e.data.node);
                     }});
 
-                    // Menyembunyikan panel atribut dan mengembalikan semua node/edge saat mengklik ruang kosong
-                    s.bind('clickStage', function(e) {{
-                        console.log("Klik di area kosong.");
-                        nodeAttributesPanel.style.display = 'none';
-
-                        // Tampilkan kembali semua node dan edge
-                        s.graph.nodes().forEach(function(n) {{
-                            n.hidden = false;
+                    // Event double click node untuk zoom
+                    s.bind('doubleClickNode', function(e) {{
+                        var node = e.data.node;
+                        s.camera.goTo({{
+                            x: node.x,
+                            y: node.y,
+                            ratio: 0.5
                         }});
-                        s.graph.edges().forEach(function(e) {{
-                            e.hidden = false;
+                    }});
+
+                    // Menyembunyikan panel atribut saat mengklik area kosong
+                    s.bind('clickStage', function(e) {{
+                        nodeAttributesPanel.style.display = 'none';
+                        
+                        // Kembalikan warna node ke semula
+                        s.graph.nodes().forEach(function(n) {{
+                            if (n.originalColor) {{
+                                n.color = n.originalColor;
+                                delete n.originalColor;
+                            }}
                         }});
                         s.refresh();
                     }});
 
-                } catch (e) {{
+                    // Enable drag and drop
+                    s.bind('downNodes', function(e) {{
+                        var node = e.data.nodes[0];
+                        node.isDragging = true;
+                    }});
+
+                    s.bind('mouseup', function(e) {{
+                        s.graph.nodes().forEach(function(n) {{
+                            n.isDragging = false;
+                        }});
+                    }});
+
+                    s.bind('mousemove', function(e) {{
+                        var draggedNode = s.graph.nodes().find(function(n) {{
+                            return n.isDragging;
+                        }});
+                        
+                        if (draggedNode) {{
+                            draggedNode.x = e.data.captor.x;
+                            draggedNode.y = e.data.captor.y;
+                            s.refresh();
+                        }}
+                    }});
+
+                }} catch (e) {{
                     console.error("Kesalahan saat menginisialisasi Sigma.js:", e);
+                    alert("Terjadi kesalahan saat memuat visualisasi. Lihat konsol untuk detail.");
                 }}
             }} else {{
-                console.error("Pustaka Sigma.js tidak dimuat atau 'sigma' tidak terdefinisi. Harap periksa tautan CDN.");
+                console.error("Pustaka Sigma.js tidak dimuat atau 'sigma' tidak terdefinisi.");
             }}
         }});
     </script>
@@ -414,37 +476,30 @@ html_code = f"""
 """
 
 st.set_page_config(layout="wide")
-st.title("Contoh Visualisasi Jaringan OII (Streamlit)")
+st.title("Visualisasi Jaringan Interaktif")
 
 st.write("""
-Ini adalah adaptasi Streamlit dari visualisasi jaringan HTML yang disediakan.
-Data grafik dari `data.json` telah berhasil dimuat dan disematkan.
+Visualisasi jaringan ini menampilkan hubungan antara berbagai entitas. 
+Gunakan fitur berikut untuk berinteraksi dengan grafik:
 """)
 
 # Render komponen HTML
 components.html(html_code, height=800, scrolling=True)
 
-st.info("""
-**Instruksi dan Pemecahan Masalah:**
+st.markdown("""
+### Panduan Penggunaan:
+1. **Pencarian Node**: Gunakan kotak pencarian di panel kiri untuk mencari node tertentu
+2. **Klik Node**: Klik pada node untuk melihat detail atribut dan koneksinya di panel kanan
+3. **Zoom**: 
+   - Gunakan tombol + dan - di pojok kanan bawah 
+   - Atau gunakan scroll mouse
+4. **Drag Node**: Klik dan tahan node untuk memindahkannya
+5. **Double Click**: Double klik pada node untuk zoom ke node tersebut
 
-1.  **Coba Lagi:** Jalankan aplikasi Streamlit dengan kode yang diperbarui ini.
-2.  **Cari Node:** Gunakan bilah pencarian untuk mencari "TinmasIndonesia" (atau node lain yang ingin Anda eksplorasi).
-3.  **Klik Node:** Setelah node "TinmasIndonesia" terlihat, **klik langsung pada node tersebut** di area grafik.
-    * Sebuah panel di sebelah kiri akan muncul, menampilkan atribut node.
-    * Sekarang, grafik juga seharusnya hanya menampilkan node "TinmasIndonesia" dan semua node serta edge yang terhubung langsung dengannya.
-    * Daftar "Connections" akan muncul di panel atribut, mencantumkan label node yang terhubung.
-4.  **Gerakkan Grafik:** Coba seret area kosong di grafik (bukan node) untuk menggeser (pan) tampilan. Coba juga gulir roda mouse untuk memperbesar/memperkecil.
-
-**Jika masih ada masalah, Lakukan Hal Ini:**
-
-* **Buka Konsol Pengembang (Developer Console):** Ini adalah alat paling penting.
-    * Tekan `F12` di browser Anda (atau klik kanan pada halaman dan pilih "Inspect" / "Periksa").
-    * Buka tab "Console" (Konsol).
-    * Cari pesan error berwarna merah.
-    * Cari juga pesan `console.log` yang saya tambahkan. Ini akan memberi tahu kita apakah event klik terdeteksi dan apakah ada kesalahan saat mencoba menampilkan atribut atau menyaring grafik.
-* **Periksa Struktur `data.json` Anda:**
-    * Pastikan ada `edges` (koneksi) yang valid di `data.json` Anda yang menghubungkan node-node. Jika tidak ada edge yang relevan, fungsionalitas "Connections" tidak akan menampilkan apa pun.
-    * Pastikan setiap edge memiliki properti `source` dan `target` yang mengacu pada `id` node yang ada.
-* **Perhatikan Pengaturan Sigma.js `autoRescale`:** Saya telah menambahkan `autoRescale: false`. Terkadang, auto-rescale dapat mengganggu interaksi manual atau zoom. Jika masih tidak bisa digerakkan, coba komentar `autoRescale: false` atau ubah nilainya.
-* **Bagikan Output Konsol:** Jika Anda melihat pesan error atau pesan `console.log` yang tidak terduga, salin dan tempelkan di sini. Ini akan sangat membantu dalam mendiagnosis masalah.
-""")
+### Informasi Teknis:
+- **Jumlah Node**: {num_nodes}
+- **Jumlah Edge**: {num_edges}
+""".format(
+    num_nodes=len(data_json_content.get('nodes', [])),
+    num_edges=len(data_json_content.get('edges', []))
+))
