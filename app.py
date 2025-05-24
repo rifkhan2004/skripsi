@@ -6,9 +6,25 @@ import json
 try:
     with open('data.json', 'r') as f:
         data_json_content = json.load(f)
+        
+    # Validasi struktur data
+    if 'nodes' not in data_json_content or 'edges' not in data_json_content:
+        st.error("Struktur data.json tidak valid. Harus memiliki 'nodes' dan 'edges'")
+        st.stop()
+        
+    st.success(f"Data berhasil dimuat: {len(data_json_content['nodes'])} node, {len(data_json_content['edges'])} edges")
+    
 except FileNotFoundError:
     st.error("Kesalahan: data.json tidak ditemukan. Pastikan file berada di direktori yang sama.")
-    st.stop()  # Hentikan eksekusi jika file data tidak ditemukan
+    st.stop()
+except json.JSONDecodeError:
+    st.error("Kesalahan: data.json tidak valid. Periksa format JSON.")
+    st.stop()
+
+# Debug: Tampilkan contoh data
+with st.expander("Lihat contoh data.json"):
+    st.json(data_json_content["nodes"][:2] if len(data_json_content["nodes"]) > 0 else {})
+    st.json(data_json_content["edges"][:2] if len(data_json_content["edges"]) > 0 else {})
 
 # Konversi kamus Python ke string JSON untuk disematkan di JavaScript
 json_data_str = json.dumps(data_json_content)
@@ -18,368 +34,116 @@ html_code = f"""
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Visualisasi Jaringan OII</title>
+    <title>Visualisasi Jaringan</title>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body {{ margin: 0; overflow: hidden; font-family: sans-serif; }}
-        #sigma-container {{ 
+        body {{ margin: 0; padding: 0; overflow: hidden; }}
+        #sigma-container {{
             width: 100%;
             height: 800px;
-            border: 1px solid #ccc;
             background-color: #f0f0f0;
+            position: relative;
         }}
-        #mainpanel {{
+        #loading {{
             position: absolute;
-            top: 20px;
-            left: 20px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 100;
-            max-height: 80%;
-            overflow-y: auto;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            width: 280px;
-        }}
-        #node-attributes-panel {{
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 15px;
-            border-radius: 8px;
-            z-index: 90;
-            max-height: 80%;
-            overflow-y: auto;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            width: 300px;
-            display: none;
-        }}
-        .connection-list {{
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
-        }}
-        .connection-item {{
-            padding: 8px;
-            margin: 5px 0;
-            background: #f5f5f5;
-            border-radius: 3px;
-            cursor: pointer;
-        }}
-        .connection-item:hover {{
-            background: #e0e0e0;
-        }}
-        .degree-info {{
-            font-size: 0.8em;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: sans-serif;
             color: #666;
-            margin-top: 3px;
-        }}
-        .in-degree {{ color: #2ca02c; }}
-        .out-degree {{ color: #d62728; }}
-        .total-degree {{ color: #1f77b4; }}
-        .connection-direction {{
-            display: inline-block;
-            width: 20px;
-            text-align: center;
-            font-weight: bold;
-        }}
-        .connection-info {{
-            display: flex;
-            justify-content: space-between;
-            margin-top: 5px;
-        }}
-        .connection-label {{
-            font-weight: bold;
         }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.plugins.filter.min.js"></script>
 </head>
 <body>
-    <div id="sigma-container"></div>
-    <div id="mainpanel">
-        <h2>Visualisasi Jaringan</h2>
-        <p>Ini adalah contoh visualisasi jaringan.</p>
-        <div>
-            <h3>Legenda:</h3>
-            <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
-            <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
-            <p><strong style="color: #ff7f0e;">Node Terhubung</strong>: Node yang berhubungan dengan node yang dipilih</p>
-            <p><strong style="color: #d62728;">Node Dipilih</strong>: Node yang sedang dipilih</p>
-        </div>
-        <div>
-            <h3>Cari:</h3>
-            <input type="text" id="search-input" placeholder="Cari berdasarkan nama">
-        </div>
-    </div>
-    <div id="node-attributes-panel">
-        <h3>Atribut Node: <span id="node-label"></span></h3>
-        <div id="node-details"></div>
-        <div class="connection-list">
-            <h4>Node Terhubung:</h4>
-            <div id="connections-container"></div>
-        </div>
+    <div id="sigma-container">
+        <div id="loading">Memuat visualisasi jaringan...</div>
     </div>
 
     <script>
+        // Debug info
+        console.log("Memulai inisialisasi Sigma.js");
+        
         // Data jaringan
         const jsonData = {json_data_str};
+        console.log("Data JSON yang diterima:", jsonData);
+        
+        // Validasi data sebelum memuat
+        if (!jsonData.nodes || jsonData.nodes.length === 0) {{
+            console.error("Tidak ada node dalam data");
+            document.getElementById('loading').textContent = "Error: Tidak ada node dalam data";
+            throw new Error("Tidak ada node dalam data");
+        }}
         
         // Inisialisasi sigma
-        const container = document.getElementById('sigma-container');
-        const s = new sigma({{
-            container: container,
-            settings: {{
-                minNodeSize: 3,
-                maxNodeSize: 15,
-                minEdgeSize: 0.5,
-                maxEdgeSize: 2,
-                enableCamera: true,
-                labelThreshold: 5,
-                mouseWheelEnabled: true
-            }}
-        }});
-
-        // Tambahkan plugin filter
-        sigma.plugins.filter = sigma.plugins.filter || {{}};
-        
-        // Simpan data asli untuk reset
-        let originalGraphData = null;
-
-        // Muat data
-        s.graph.read(jsonData);
-        originalGraphData = JSON.parse(JSON.stringify(jsonData));
-        
-        // Hitung degree untuk semua node
-        function calculateDegrees() {{
-            s.graph.nodes().forEach(node => {{
-                // Hitung out-degree (edge yang keluar dari node ini)
-                node.outDegree = s.graph.outEdges(node.id).length;
-                
-                // Hitung in-degree (edge yang masuk ke node ini)
-                node.inDegree = s.graph.inEdges(node.id).length;
-                
-                // Hitung total degree
-                node.degree = node.outDegree + node.inDegree;
-                
-                // Atur ukuran node berdasarkan degree jika tidak ada ukuran
-                if (!node.size) {{
-                    node.size = Math.log(node.degree + 1);
-                }}
-                
-                // Atur warna default jika tidak ada warna
-                if (!node.color) {{
-                    node.color = '#1f77b4';
-                }}
-                
-                // Atur label jika tidak ada label
-                if (!node.label && node.attributes && node.attributes.name) {{
-                    node.label = node.attributes.name;
-                }}
-            }});
-        }}
-        
-        calculateDegrees();
-        
-        // Atur warna edge
-        s.graph.edges().forEach(edge => {{
-            if (!edge.color) {{
-                edge.color = '#999';
-            }}
-        }});
-        
-        // Refresh tampilan
-        s.refresh();
-        
-        // Fungsi pencarian
-        document.getElementById('search-input').addEventListener('input', function(e) {{
-            const query = e.target.value.toLowerCase();
-            s.graph.nodes().forEach(node => {{
-                const label = (node.label || node.id || '').toLowerCase();
-                node.hidden = query !== '' && !label.includes(query);
-            }});
-            s.refresh();
-        }});
-        
-        // Fungsi untuk menampilkan hanya node yang terhubung
-        function showConnectedNodes(nodeId) {{
-            // Reset semua node ke hidden
-            s.graph.nodes().forEach(node => {{
-                node.hidden = true;
-                node.color = '#1f77b4'; // Reset warna
-            }});
-            
-            // Tampilkan node yang dipilih
-            const selectedNode = s.graph.nodes(nodeId);
-            if (selectedNode) {{
-                selectedNode.hidden = false;
-                selectedNode.color = '#d62728'; // Warna merah untuk node yang dipilih
-            }}
-            
-            // Temukan semua node yang terhubung
-            const connectedNodes = new Set();
-            const connectedEdges = s.graph.edges().filter(edge => {{
-                return edge.source === nodeId || edge.target === nodeId;
-            }});
-            
-            connectedEdges.forEach(edge => {{
-                const otherNodeId = edge.source === nodeId ? edge.target : edge.source;
-                connectedNodes.add(otherNodeId);
-                
-                // Tampilkan edge yang terhubung
-                edge.hidden = false;
-                
-                // Tampilkan node yang terhubung
-                const otherNode = s.graph.nodes(otherNodeId);
-                if (otherNode) {{
-                    otherNode.hidden = false;
-                    otherNode.color = '#ff7f0e'; // Warna oranye untuk node terhubung
+        try {{
+            const container = document.getElementById('sigma-container');
+            const s = new sigma({{
+                container: container,
+                settings: {{
+                    minNodeSize: 5,
+                    maxNodeSize: 20,
+                    minEdgeSize: 1,
+                    maxEdgeSize: 3,
+                    enableCamera: true,
+                    labelThreshold: 8,
+                    defaultNodeColor: '#1f77b4',
+                    defaultEdgeColor: '#999'
                 }}
             }});
             
-            // Tampilkan node yang dipilih dan edge yang terhubung
-            s.refresh();
+            console.log("Sigma instance dibuat");
             
-            return Array.from(connectedNodes);
-        }}
-        
-        // Fungsi reset tampilan ke semua node
-        function resetView() {{
+            // Muat data
+            s.graph.read(jsonData);
+            console.log("Data dimuat:", s.graph.nodes().length, "nodes,", s.graph.edges().length, "edges");
+            
+            // Pastikan semua node memiliki koordinat
             s.graph.nodes().forEach(node => {{
-                node.hidden = false;
-                node.color = '#1f77b4'; // Warna default
+                if (typeof node.x === 'undefined' || typeof node.y === 'undefined') {{
+                    // Jika tidak ada koordinat, beri nilai acak
+                    node.x = Math.random();
+                    node.y = Math.random();
+                    console.warn("Node", node.id, "tidak memiliki koordinat, menggunakan nilai acak");
+                }}
+                
+                // Set default properties jika tidak ada
+                if (!node.size) node.size = 5;
+                if (!node.color) node.color = s.settings('defaultNodeColor');
+                if (!node.label) node.label = node.id;
             }});
             
+            // Set default properties untuk edge
             s.graph.edges().forEach(edge => {{
-                edge.hidden = false;
+                if (!edge.color) edge.color = s.settings('defaultEdgeColor');
+                if (!edge.size) edge.size = 1;
             }});
             
+            // Hitung layout jika tidak ada posisi
+            if (s.graph.nodes().some(n => typeof n.x === 'undefined')) {{
+                console.log("Menghitung layout menggunakan forceAtlas2");
+                sigma.layouts.forceAtlas2.start(s, {{
+                    adjustSizes: true,
+                    scalingRatio: 10,
+                    gravity: 0.2
+                }});
+                
+                // Stop layout setelah 3 detik
+                setTimeout(() => sigma.layouts.forceAtlas2.stop(s), 3000);
+            }}
+            
+            // Refresh tampilan
             s.refresh();
+            console.log("Grafik direfresh");
+            
+            // Sembunyikan loading
+            document.getElementById('loading').style.display = 'none';
+            
+        }} catch (error) {{
+            console.error("Error saat memuat grafik:", error);
+            document.getElementById('loading').textContent = "Error: " + error.message;
         }}
-        
-        // Fungsi tampilkan detail node
-        s.bind('clickNode', function(e) {{
-            const node = e.data.node;
-            const panel = document.getElementById('node-attributes-panel');
-            const label = document.getElementById('node-label');
-            const details = document.getElementById('node-details');
-            const connectionsContainer = document.getElementById('connections-container');
-            
-            label.textContent = node.label || node.id;
-            details.innerHTML = '';
-            connectionsContainer.innerHTML = '';
-            
-            // Tampilkan atribut node (termasuk degree)
-            const attributes = node.attributes || node;
-            for (const key in attributes) {{
-                if (['x', 'y', 'size', 'color', 'id', 'label'].includes(key)) continue;
-                const div = document.createElement('div');
-                div.innerHTML = `<strong>${{key}}:</strong> ${{attributes[key]}}`;
-                details.appendChild(div);
-            }}
-            
-            // Tambahkan informasi degree node yang dipilih
-            const degreeDiv = document.createElement('div');
-            degreeDiv.innerHTML = `
-                <div class="degree-info">
-                    <span class="out-degree">Out-Degree: ${{node.outDegree || 0}}</span> | 
-                    <span class="in-degree">In-Degree: ${{node.inDegree || 0}}</span> | 
-                    <span class="total-degree">Total Degree: ${{node.degree || 0}}</span>
-                </div>
-            `;
-            details.appendChild(degreeDiv);
-            
-            // Tampilkan hanya node yang terhubung
-            const connectedNodeIds = showConnectedNodes(node.id);
-            
-            // Tampilkan daftar node yang terhubung dengan informasi degree dan arah hubungan
-            connectedNodeIds.forEach(nodeId => {{
-                const connectedNode = s.graph.nodes(nodeId);
-                if (connectedNode) {{
-                    const connectionItem = document.createElement('div');
-                    connectionItem.className = 'connection-item';
-                    
-                    // Tentukan arah hubungan
-                    let direction = '';
-                    let directionText = '';
-                    const edgesFromSelected = s.graph.edges().filter(e => 
-                        e.source === node.id && e.target === connectedNode.id);
-                    const edgesToSelected = s.graph.edges().filter(e => 
-                        e.source === connectedNode.id && e.target === node.id);
-                    
-                    if (edgesFromSelected.length > 0 && edgesToSelected.length > 0) {{
-                        direction = '↔'; 
-                        directionText = 'Hubungan dua arah';
-                    }} else if (edgesFromSelected.length > 0) {{
-                        direction = '←'; 
-                        directionText = 'Dari node ini';
-                    }} else if (edgesToSelected.length > 0) {{
-                        direction = '→'; 
-                        directionText = 'Ke node ini';
-                    }}
-                    
-                    connectionItem.innerHTML = `
-                        <div class="connection-label">
-                            <span class="connection-direction">${{direction}}</span>
-                            ${{connectedNode.label || connectedNode.id}}
-                        </div>
-                        <div class="connection-info">
-                            <span>${{directionText}}</span>
-                        </div>
-                        <div class="degree-info">
-                            <span class="out-degree">Out: ${{connectedNode.outDegree || 0}}</span> | 
-                            <span class="in-degree">In: ${{connectedNode.inDegree || 0}}</span> | 
-                            <span class="total-degree">Total: ${{connectedNode.degree || 0}}</span>
-                        </div>
-                    `;
-                    
-                    // Tambahkan event click untuk fokus ke node yang terhubung
-                    connectionItem.addEventListener('click', () => {{
-                        s.camera.goTo({{
-                            x: connectedNode.x,
-                            y: connectedNode.y,
-                            ratio: 0.8
-                        }});
-                    }});
-                    
-                    connectionsContainer.appendChild(connectionItem);
-                }}
-            }});
-            
-            panel.style.display = 'block';
-        }});
-        
-        // Sembunyikan panel dan reset tampilan saat klik area kosong
-        s.bind('clickStage', function() {{
-            document.getElementById('node-attributes-panel').style.display = 'none';
-            resetView();
-        }});
-        
-        // Enable drag nodes
-        s.bind('downNode', function(e) {{
-            const node = e.data.node;
-            node.isDragging = true;
-        }});
-        
-        s.bind('mouseup', function() {{
-            s.graph.nodes().forEach(node => {{
-                node.isDragging = false;
-            }});
-        }});
-        
-        s.bind('mousemove', function(e) {{
-            const draggedNode = s.graph.nodes().find(node => node.isDragging);
-            if (draggedNode) {{
-                draggedNode.x = e.data.captor.x;
-                draggedNode.y = e.data.captor.y;
-                s.refresh();
-            }}
-        }});
     </script>
 </body>
 </html>
@@ -388,26 +152,14 @@ html_code = f"""
 st.set_page_config(layout="wide")
 st.title("Visualisasi Jaringan Interaktif")
 
-st.write("""
-Visualisasi jaringan ini menampilkan hubungan antara berbagai entitas. 
-Gunakan fitur berikut untuk berinteraksi dengan grafik:
-""")
-
 # Render komponen HTML
 components.html(html_code, height=850)
 
+# Debug informasi
 st.markdown(f"""
-### Panduan Penggunaan:
-1. **Klik Node**: Klik pada node untuk melihat:
-   - Detail atribut node termasuk out-degree dan in-degree
-   - Daftar node yang terhubung beserta informasi degree dan arah hubungan
-   - Hanya node yang terhubung yang akan ditampilkan di grafik
-2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
-3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
-4. **Drag Node**: Klik dan tahan node untuk memindahkannya
-5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
-
-### Informasi Teknis:
+### Informasi Debug:
 - **Jumlah Node**: {len(data_json_content.get('nodes', []))}
 - **Jumlah Edge**: {len(data_json_content.get('edges', []))}
-""")
+- **Node Contoh**: 
+  ```json
+  {json.dumps(data_json_content.get('nodes', [{}])[0]) if data_json_content.get('nodes') else 'Tidak ada node'}
