@@ -8,7 +8,7 @@ try:
         data_json_content = json.load(f)
 except FileNotFoundError:
     st.error("Kesalahan: data.json tidak ditemukan. Pastikan file berada di direktori yang sama.")
-    st.stop() # Hentikan eksekusi jika file data tidak ditemukan
+    st.stop()  # Hentikan eksekusi jika file data tidak ditemukan
 
 # Konversi kamus Python ke string JSON untuk disematkan di JavaScript
 json_data_str = json.dumps(data_json_content)
@@ -30,6 +30,10 @@ html_code = f"""
     body {{ margin: 0; overflow: hidden; font-family: sans-serif; }}
     .sigma-parent {{ position: absolute; width: 100%; height: 100%; top: 0; left: 0; }}
     .sigma-expand {{ position: absolute; width: 100%; height: 100%; top: 0; left: 0; }}
+    #sigma-canvas {{ 
+        border: 1px solid #ccc;
+        background-color: #f0f0f0;
+    }}
 
     /* Main panel on the left for controls and info */
     #mainpanel {{
@@ -160,7 +164,7 @@ html_code = f"""
 
 <body>
     <div class="sigma-parent">
-        <div class="sigma-expand" id="sigma-canvas" style="background-color: #f0f0f0;"></div>
+        <div class="sigma-expand" id="sigma-canvas"></div>
     </div>
     <div id="mainpanel">
         <div class="col">
@@ -225,10 +229,14 @@ html_code = f"""
     <script type="text/javascript">
         // Sematkan data JSON secara langsung
         var jsonData = {json_data_str};
+        console.log("Data JSON yang diterima:", jsonData);
 
         // Inisialisasi Sigma.js saat DOM siap
         document.addEventListener('DOMContentLoaded', function() {{
             console.log("Konten DOM Dimuat. Menginisialisasi Sigma.js...");
+            console.log("Sigma.js status:", typeof sigma !== 'undefined' ? "Loaded" : "Not loaded");
+            console.log("jQuery status:", typeof jQuery !== 'undefined' ? "Loaded" : "Not loaded");
+            
             var s;
             var container = document.getElementById('sigma-canvas');
             var nodeAttributesPanel = document.getElementById('node-attributes-panel');
@@ -267,6 +275,8 @@ html_code = f"""
                     // Muat data grafik
                     s.graph.read(jsonData);
                     console.log("Data grafik dimuat. Node:", s.graph.nodes().length, "Edge:", s.graph.edges().length);
+                    console.log("Contoh node:", s.graph.nodes()[0]);
+                    console.log("Contoh edge:", s.graph.edges()[0]);
 
                     // Hitung ukuran node berdasarkan degree jika tidak ada ukuran yang ditentukan
                     s.graph.nodes().forEach(function(node) {{
