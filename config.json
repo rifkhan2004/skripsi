@@ -1,0 +1,53 @@
+{
+  "type": "network",
+  "version": "1.0",
+  "data": "data.json",
+  "logo": {
+    "file": "",
+    "link": "",
+    "text": "muhammad Rifkhan Afifi"
+  },
+  "text": {
+    "more": "Graf ini menunjukkan hubungan antara akun-akun yang melakukan percakapan seputar Timnas Indonesia melalui fitur reply. Setiap simpul merepresentasikan akun pengguna, dan setiap sisi menunjukkan interaksi. Visualisasi ini dibuat menggunakan Gephi dan plugin Sigma.js Exporter.",
+    "intro": "Visualisasi jaringan balasan (reply) seputar Timnas Indonesia di platform X, hasil analisis dengan metode SNA",
+    "title": "Graf Jaringan Reply"
+  },
+  "legend": {
+    "edgeLabel": "Menunjukkan bahwa setiap sisi merepresentasikan hubungan balasan atau reply antar akun",
+    "colorLabel": "Merepresentasikan banyaknya hubungan langsung yang dimiliki oleh setiap akun. Warna yang lebih terang/gelap menunjukkan simpul yang lebih/kurang sentral dalam jaringan",
+    "nodeLabel": "Menunjukkan bahwa setiap simpul merepresentasikan satu akun di platform X"
+  },
+  "features": {
+    "search": true,
+    "groupSelectorAttribute": "Degree",
+    "hoverBehavior": "default"
+  },
+  "informationPanel": {
+    "groupByEdgeDirection": true,
+    "imageAttribute": "Degree"
+  },
+  "sigma": {
+    "drawingProperties": {
+      "defaultEdgeType": "curve",
+      "defaultHoverLabelBGColor": "#002147",
+      "defaultLabelBGColor": "#ddd",
+      "activeFontStyle": "bold",
+      "defaultLabelColor": "#000",
+      "labelThreshold": 10,
+      "defaultLabelHoverColor": "#fff",
+      "fontStyle": "bold",
+      "hoverFontStyle": "bold",
+      "defaultLabelSize": 14
+    },
+    "graphProperties": {
+      "maxEdgeSize": 0.5,
+      "minEdgeSize": 0.2,
+      "minNodeSize": 1,
+      "maxNodeSize": 7
+    },
+    "mouseProperties": {
+      "maxRatio": 20,
+      "minRatio": 0.75
+    }
+  }
+}
