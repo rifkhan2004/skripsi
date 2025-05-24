@@ -13,7 +13,7 @@ except FileNotFoundError:
 # Konversi kamus Python ke string JSON untuk disematkan di JavaScript
 json_data_str = json.dumps(data_json_content)
 
-# Kode HTML dan JavaScript untuk disematkan di Streamlit
+# HTML dan JavaScript code to embed in Streamlit
 html_code = f"""
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-gb" lang="en" xmlns:og="http://opengraphprotocol.org/schema/" xmlns:fb="http://www.facebook.com/2008/fbml" itemscope itemtype="http://schema.org/Map">
@@ -26,10 +26,12 @@ html_code = f"""
 <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
 
 <style>
-    /* Styling dasar untuk membuat kanvas terlihat, diadaptasi dari CSS asli */
+    /* Basic styling to make the canvas visible, adapted from original CSS */
     body {{ margin: 0; overflow: hidden; font-family: sans-serif; }}
     .sigma-parent {{ position: absolute; width: 100%; height: 100%; top: 0; left: 0; }}
     .sigma-expand {{ position: absolute; width: 100%; height: 100%; top: 0; left: 0; }}
+
+    /* Main panel on the left for controls and info */
     #mainpanel {{
         position: absolute;
         top: 20px;
@@ -41,12 +43,51 @@ html_code = f"""
         max-height: 80%;
         overflow-y: auto;
         box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        width: 280px; /* Lebar panel utama */
     }}
     #maintitle, #title, #titletext, #legend, #search, #attributeselect {{ margin-bottom: 10px; }}
     h2 {{ margin-top: 0; font-size: 1.2em; color: #333; }}
     a {{ text-decoration: none; color: #007bff; }}
     a:hover {{ text-decoration: underline; }}
     .cf::after {{ content: ""; display: table; clear: both; }} /* Clearfix */
+
+    /* Node Attributes Panel (new) */
+    #node-attributes-panel {{
+        position: absolute;
+        top: 20px;
+        left: 320px; /* Posisikan di sebelah kanan mainpanel */
+        background: rgba(255, 255, 255, 0.9);
+        padding: 15px;
+        border-radius: 8px;
+        z-index: 90; /* Sedikit di bawah mainpanel */
+        max-height: 80%;
+        overflow-y: auto;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        width: 300px; /* Lebar panel atribut node */
+        display: none; /* Sembunyikan secara default */
+        border-left: 1px solid #ccc; /* Pemisah visual */
+    }}
+    #node-attributes-panel h3 {{
+        margin-top: 0;
+        color: #333;
+    }}
+    #node-attributes-panel dl {{
+        margin: 0;
+        padding: 0;
+    }}
+    #node-attributes-panel dt {{
+        font-weight: bold;
+        margin-top: 8px;
+        color: #555;
+    }}
+    #node-attributes-panel dd {{
+        margin-left: 0;
+        margin-bottom: 5px;
+        padding-left: 10px;
+        border-left: 3px solid #007bff;
+    }}
+
+
     #zoom {{
         position: absolute;
         bottom: 20px;
@@ -84,7 +125,7 @@ html_code = f"""
     #developercontainer {{
         left: auto;
         right: 20px;
-        bottom: 60px; /* Sesuaikan posisi agar tidak tumpang tindih dengan zoom */
+        bottom: 60px; /* Adjust position to not overlap with zoom */
     }}
     #oii, #jisc {{
         display: inline-block;
@@ -151,6 +192,12 @@ html_code = f"""
             <p>Mengklik node mungkin mengungkapkan informasi lebih rinci di panel atribut (jika diimplementasikan sepenuhnya).</p>
         </div>
     </div>
+
+    <div id="node-attributes-panel">
+        <h3>Atribut Node: <span id="node-label"></span></h3>
+        <dl id="node-details"></dl>
+    </div>
+
     <div id="zoom">
         <div class="z" rel="in"><span>+</span></div>
         <div class="z" rel="out"><span>-</span></div>
@@ -173,6 +220,9 @@ html_code = f"""
             console.log("Konten DOM Dimuat. Menginisialisasi Sigma.js...");
             var s;
             var container = document.getElementById('sigma-canvas');
+            var nodeAttributesPanel = document.getElementById('node-attributes-panel');
+            var nodeLabelSpan = document.getElementById('node-label');
+            var nodeDetailsDl = document.getElementById('node-details');
 
             if (typeof sigma !== 'undefined') {{
                 try {{
@@ -183,24 +233,21 @@ html_code = f"""
                             maxNodeSize: 5,
                             minEdgeSize: 0.2,
                             maxEdgeSize: 0.5,
-                            // Aktifkan roda mouse untuk zoom
                             enableCamera: true,
                             zoomMin: 0.1,
                             zoomMax: 10,
-                            mouseEnabled: true, // Aktifkan interaksi mouse (pan, zoom)
-                            touchEnabled: true, // Aktifkan interaksi sentuh
-                            doubleClickEnabled: false, // Nonaktifkan zoom klik ganda
-                            labelThreshold: 8 // Hanya tampilkan label untuk node yang lebih besar dari ini
+                            mouseEnabled: true,
+                            touchEnabled: true,
+                            doubleClickEnabled: false,
+                            labelThreshold: 8
                         }}
                     }});
 
                     console.log("Instansi Sigma dibuat.");
 
-                    // Baca data grafik secara manual
                     s.graph.read(jsonData);
                     console.log("Data grafik dimuat. Node:", s.graph.nodes().length, "Edge:", s.graph.edges().length);
 
-                    // Segarkan grafik untuk menerapkan perubahan dan merender
                     s.refresh();
                     console.log("Grafik Sigma diperbarui.");
 
@@ -215,7 +262,7 @@ html_code = f"""
                         s.camera.goTo({{x: 0, y: 0, ratio: 1}});
                     }});
 
-                    // Inisialisasi Fancybox untuk tautan "Informasi lebih lanjut"
+                    // Inisialisasi Fancybox
                     if (typeof $.fn.fancybox === 'function') {{
                         $(".line.fb").fancybox({{
                             'autoDimensions': false,
@@ -231,9 +278,8 @@ html_code = f"""
                         console.warn("Fancybox tidak dimuat. Tautan 'Informasi lebih lanjut' tidak akan berfungsi seperti yang diharapkan.");
                     }}
 
-                    // Placeholder untuk fungsionalitas pencarian
+                    // Fungsionalitas pencarian
                     var searchInput = document.querySelector('#search input[name="search"]');
-                    var searchResults = document.querySelector('#search .results');
                     if (searchInput) {{
                         searchInput.addEventListener('input', function() {{
                             var query = this.value.toLowerCase();
@@ -248,6 +294,47 @@ html_code = f"""
                         }});
                         console.log("Pendengar acara input pencarian ditambahkan.");
                     }}
+
+                    // === Fungsionalitas Baru: Klik Node untuk Menampilkan Atribut ===
+                    s.bind('clickNode', function(e) {{
+                        var node = e.data.node;
+                        console.log("Node diklik:", node.label, node.id);
+
+                        // Tampilkan panel atribut
+                        nodeAttributesPanel.style.display = 'block';
+
+                        // Perbarui label node di panel
+                        nodeLabelSpan.textContent = node.label || node.id;
+
+                        // Bersihkan detail sebelumnya
+                        nodeDetailsDl.innerHTML = '';
+
+                        // Tampilkan atribut node
+                        // Asumsi atribut berada di node.attributes jika Anda menggunakan Gephi Export
+                        // Jika tidak ada 'attributes', ambil langsung dari node.
+                        var attributesToShow = node.attributes || node;
+
+                        for (var key in attributesToShow) {{
+                            if (attributesToShow.hasOwnProperty(key)) {{
+                                // Hindari menampilkan properti internal Sigma.js yang tidak relevan
+                                if (key === 'x' || key === 'y' || key === 'size' || key === 'color' || key === 'id' || key === 'label') {{
+                                    continue;
+                                }}
+                                var dt = document.createElement('dt');
+                                dt.textContent = key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str){{ return str.toUpperCase(); }}); // Format nama atribut
+                                var dd = document.createElement('dd');
+                                dd.textContent = attributesToShow[key];
+                                nodeDetailsDl.appendChild(dt);
+                                nodeDetailsDl.appendChild(dd);
+                            }}
+                        }}
+                    }});
+
+                    // Menyembunyikan panel atribut saat mengklik ruang kosong
+                    s.bind('clickStage', function(e) {{
+                        console.log("Klik di area kosong.");
+                        nodeAttributesPanel.style.display = 'none';
+                    }});
 
                 }} catch (e) {{
                     console.error("Kesalahan saat menginisialisasi Sigma.js:", e);
@@ -273,21 +360,26 @@ Data grafik dari `data.json` telah berhasil dimuat dan disematkan.
 components.html(html_code, height=800, scrolling=True)
 
 st.info("""
-**Jika grafik tidak muncul, periksa langkah-langkah berikut:**
+**Instruksi dan Pemecahan Masalah:**
 
-1.  **Buka Konsol Pengembang (Developer Console) di Browser Anda:**
-    * Klik kanan pada halaman Streamlit Anda dan pilih "Inspect" (Periksa) atau "Inspect Element" (Periksa Elemen).
-    * Buka tab "Console" (Konsol). Cari pesan error berwarna merah. Pesan ini akan memberikan petunjuk tentang masalah JavaScript.
-    * Cari juga pesan `console.log` yang saya tambahkan (misalnya, "Instansi Sigma dibuat.", "Data grafik dimuat.", "Grafik Sigma diperbarui."). Ini akan menunjukkan sampai tahap mana inisialisasi Sigma.js berjalan.
+1.  **Coba Lagi:** Jalankan aplikasi Streamlit dengan kode yang diperbarui ini.
+2.  **Cari Node:** Gunakan bilah pencarian untuk mencari "TinmasIndonesia".
+3.  **Klik Node:** Setelah node "TinmasIndonesia" terlihat, **klik langsung pada node tersebut** di area grafik. Sebuah panel di sebelah kiri (tepat di sebelah panel kontrol utama) akan muncul, menampilkan atribut node.
 
-2.  **Pastikan `data.json` ada:** Pastikan file `data.json` berada di direktori yang sama dengan skrip Streamlit Anda. Skrip Python akan mencoba membacanya.
+**Jika masih ada masalah, Lakukan Hal Ini:**
 
-3.  **Periksa Koneksi CDN:** Pastikan Anda memiliki koneksi internet aktif. Sigma.js dan jQuery dimuat dari CDN (Content Delivery Network). Jika koneksi buruk atau CDN tidak dapat dijangkau, pustaka tidak akan dimuat.
-
-4.  **Isi Data `data.json`:** Pastikan file `data.json` Anda memiliki struktur yang benar dan data node dan edge yang valid. Terkadang, data yang kosong atau rusak dapat menyebabkan Sigma.js gagal merender.
-
-5.  **Ukuran Node/Edge:** Jika `minNodeSize` dan `maxNodeSize` sangat kecil, node mungkin terlalu kecil untuk terlihat. Coba tingkatkan nilai ini untuk pengujian. Demikian juga dengan `minEdgeSize` dan `maxEdgeSize`.
-    * Coba ubah `minNodeSize: 0.5, maxNodeSize: 5` menjadi `minNodeSize: 5, maxNodeSize: 20` untuk melihat apakah node menjadi terlihat lebih besar.
-
-Dengan memeriksa konsol browser Anda, kita harus bisa menemukan akar masalah mengapa grafik tidak muncul.
+* **Buka Konsol Pengembang (Developer Console):** Ini adalah alat paling penting.
+    * Tekan `F12` di browser Anda (atau klik kanan pada halaman dan pilih "Inspect" / "Periksa").
+    * Buka tab "Console" (Konsol).
+    * Cari pesan error berwarna merah.
+    * Cari juga pesan `console.log` yang saya tambahkan (misalnya, "Node diklik:", dll.). Ini akan memberi tahu kita apakah event klik terdeteksi dan apakah ada kesalahan saat mencoba menampilkan atribut.
+* **Periksa Struktur `data.json` Anda:**
+    * Pastikan node "TinmasIndonesia" ada di dalam `data.json` Anda.
+    * Pastikan node tersebut memiliki properti `label` dan `attributes` di dalam objeknya. Atribut-atribut inilah yang akan ditampilkan. Contoh:
+        ```json
+        {"label": "TinmasIndonesia", "x": ..., "y": ..., "id": "...", "attributes": {"Out-Degree": "...", "In-Degree": "...", ...}, "color": "...", "size": ...}
+        ```
+    * Jika `attributes` tidak ada atau kosong, panel mungkin muncul tetapi tidak menampilkan detail.
+* **Perhatikan Ukuran Node:** Jika node terlalu kecil, mungkin sulit untuk mengkliknya secara akurat. Anda dapat sementara meningkatkan `minNodeSize` dan `maxNodeSize` di pengaturan Sigma.js untuk membuatnya lebih besar saat debugging.
+* **Bagikan Output Konsol:** Jika Anda melihat pesan error atau pesan `console.log` yang tidak terduga, salin dan tempelkan di sini. Ini akan sangat membantu dalam mendiagnosis masalah.
 """)
