@@ -51,7 +51,7 @@ html_code = f"""
     a:hover {{ text-decoration: underline; }}
     .cf::after {{ content: ""; display: table; clear: both; }} /* Clearfix */
 
-    /* Node Attributes Panel (new) */
+    /* Node Attributes Panel */
     #node-attributes-panel {{
         position: absolute;
         top: 20px;
@@ -85,6 +85,14 @@ html_code = f"""
         margin-bottom: 5px;
         padding-left: 10px;
         border-left: 3px solid #007bff;
+    }}
+    #node-attributes-panel .connections-list ul {{
+        list-style-type: none;
+        padding: 0;
+    }}
+    #node-attributes-panel .connections-list li {{
+        margin-bottom: 3px;
+        padding: 2px 0;
     }}
 
 
@@ -196,6 +204,10 @@ html_code = f"""
     <div id="node-attributes-panel">
         <h3>Atribut Node: <span id="node-label"></span></h3>
         <dl id="node-details"></dl>
+        <div class="connections-list">
+            <h4>Connections:</h4>
+            <ul id="connected-nodes-list"></ul>
+        </div>
     </div>
 
     <div id="zoom">
@@ -223,6 +235,7 @@ html_code = f"""
             var nodeAttributesPanel = document.getElementById('node-attributes-panel');
             var nodeLabelSpan = document.getElementById('node-label');
             var nodeDetailsDl = document.getElementById('node-details');
+            var connectedNodesList = document.getElementById('connected-nodes-list');
 
             if (typeof sigma !== 'undefined') {{
                 try {{
@@ -233,13 +246,18 @@ html_code = f"""
                             maxNodeSize: 5,
                             minEdgeSize: 0.2,
                             maxEdgeSize: 0.5,
-                            enableCamera: true,
+                            enableCamera: true, // Pastikan ini true
                             zoomMin: 0.1,
                             zoomMax: 10,
-                            mouseEnabled: true,
-                            touchEnabled: true,
+                            mouseEnabled: true, // Pastikan ini true
+                            touchEnabled: true, // Pastikan ini true
                             doubleClickEnabled: false,
-                            labelThreshold: 8
+                            labelThreshold: 8,
+                            autoRescale: false, // Penting untuk interaksi manual, matikan auto-rescale
+                            // renderer: {{ // Tambahkan ini jika ada masalah rendering
+                            //     container: document.getElementById('sigma-canvas'),
+                            //     type: 'canvas'
+                            // }}
                         }}
                     }});
 
@@ -291,52 +309,99 @@ html_code = f"""
                                 }}
                             }});
                             s.refresh();
+                            // Sembunyikan panel atribut saat pencarian baru
+                            nodeAttributesPanel.style.display = 'none';
                         }});
                         console.log("Pendengar acara input pencarian ditambahkan.");
                     }}
 
-                    // === Fungsionalitas Baru: Klik Node untuk Menampilkan Atribut ===
+                    // === Fungsionalitas Baru: Klik Node untuk Menampilkan Atribut dan Koneksi ===
                     s.bind('clickNode', function(e) {{
                         var node = e.data.node;
-                        console.log("Node diklik:", node.label, node.id);
+                        var nodeId = node.id;
+                        console.log("Node diklik:", node.label || node.id);
 
-                        // Tampilkan panel atribut
+                        // === Tampilkan Atribut Node ===
                         nodeAttributesPanel.style.display = 'block';
-
-                        // Perbarui label node di panel
                         nodeLabelSpan.textContent = node.label || node.id;
-
-                        // Bersihkan detail sebelumnya
                         nodeDetailsDl.innerHTML = '';
-
-                        // Tampilkan atribut node
-                        // Asumsi atribut berada di node.attributes jika Anda menggunakan Gephi Export
-                        // Jika tidak ada 'attributes', ambil langsung dari node.
                         var attributesToShow = node.attributes || node;
 
                         for (var key in attributesToShow) {{
                             if (attributesToShow.hasOwnProperty(key)) {{
-                                // Hindari menampilkan properti internal Sigma.js yang tidak relevan
                                 if (key === 'x' || key === 'y' || key === 'size' || key === 'color' || key === 'id' || key === 'label') {{
                                     continue;
                                 }}
                                 var dt = document.createElement('dt');
-                                dt.textContent = key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str){{ return str.toUpperCase(); }}); // Format nama atribut
+                                dt.textContent = key.replace(/([A-Z])/g, ' $1').replace(/^./, function(str){{ return str.toUpperCase(); }});
                                 var dd = document.createElement('dd');
                                 dd.textContent = attributesToShow[key];
                                 nodeDetailsDl.appendChild(dt);
                                 nodeDetailsDl.appendChild(dd);
                             }}
                         }}
+
+                        // === Tampilkan Koneksi (Neighbors) ===
+                        connectedNodesList.innerHTML = ''; // Bersihkan daftar koneksi sebelumnya
+                        var connectedNodes = [];
+                        var nodesToDisplay = {}; // Untuk menyimpan node yang harus ditampilkan (node yang diklik + tetangga)
+                        var edgesToDisplay = {}; // Untuk menyimpan edge yang harus ditampilkan (edge yang terhubung)
+
+                        // Tambahkan node yang diklik ke daftar yang akan ditampilkan
+                        nodesToDisplay[nodeId] = true;
+
+                        s.graph.edges().forEach(function(edge) {{
+                            if (edge.source === nodeId) {{
+                                // Jika edge dimulai dari node yang diklik
+                                var targetNode = s.graph.nodes(edge.target);
+                                if (targetNode) {{
+                                    connectedNodes.push(targetNode.label || targetNode.id);
+                                    nodesToDisplay[targetNode.id] = true;
+                                    edgesToDisplay[edge.id] = true;
+                                }}_
+                            }} else if (edge.target === nodeId) {{
+                                // Jika edge berakhir di node yang diklik
+                                var sourceNode = s.graph.nodes(edge.source);
+                                if (sourceNode) {{
+                                    connectedNodes.push(sourceNode.label || sourceNode.id);
+                                    nodesToDisplay[sourceNode.id] = true;
+                                    edgesToDisplay[edge.id] = true;
+                                }}
+                            }}
+                        }});
+
+                        connectedNodes.forEach(function(neighborLabel) {{
+                            var li = document.createElement('li');
+                            li.textContent = neighborLabel;
+                            connectedNodesList.appendChild(li);
+                        }});
+
+                        // === Saring Tampilan Grafik (Hanya Node yang Diklik + Tetangga yang Terlihat) ===
+                        s.graph.nodes().forEach(function(n) {{
+                            n.hidden = !nodesToDisplay[n.id];
+                        }});
+                        s.graph.edges().forEach(function(e) {{
+                            e.hidden = !edgesToDisplay[e.id];
+                        }});
+                        s.refresh(); // Penting: segarkan grafik setelah menyembunyikan/menampilkan
                     }});
 
-                    // Menyembunyikan panel atribut saat mengklik ruang kosong
+                    // Menyembunyikan panel atribut dan mengembalikan semua node/edge saat mengklik ruang kosong
                     s.bind('clickStage', function(e) {{
                         console.log("Klik di area kosong.");
                         nodeAttributesPanel.style.display = 'none';
+
+                        // Tampilkan kembali semua node dan edge
+                        s.graph.nodes().forEach(function(n) {{
+                            n.hidden = false;
+                        }});
+                        s.graph.edges().forEach(function(e) {{
+                            e.hidden = false;
+                        }});
+                        s.refresh();
                     }});
 
-                }} catch (e) {{
+                } catch (e) {{
                     console.error("Kesalahan saat menginisialisasi Sigma.js:", e);
                 }}
             }} else {{
@@ -363,8 +428,12 @@ st.info("""
 **Instruksi dan Pemecahan Masalah:**
 
 1.  **Coba Lagi:** Jalankan aplikasi Streamlit dengan kode yang diperbarui ini.
-2.  **Cari Node:** Gunakan bilah pencarian untuk mencari "TinmasIndonesia".
-3.  **Klik Node:** Setelah node "TinmasIndonesia" terlihat, **klik langsung pada node tersebut** di area grafik. Sebuah panel di sebelah kiri (tepat di sebelah panel kontrol utama) akan muncul, menampilkan atribut node.
+2.  **Cari Node:** Gunakan bilah pencarian untuk mencari "TinmasIndonesia" (atau node lain yang ingin Anda eksplorasi).
+3.  **Klik Node:** Setelah node "TinmasIndonesia" terlihat, **klik langsung pada node tersebut** di area grafik.
+    * Sebuah panel di sebelah kiri akan muncul, menampilkan atribut node.
+    * Sekarang, grafik juga seharusnya hanya menampilkan node "TinmasIndonesia" dan semua node serta edge yang terhubung langsung dengannya.
+    * Daftar "Connections" akan muncul di panel atribut, mencantumkan label node yang terhubung.
+4.  **Gerakkan Grafik:** Coba seret area kosong di grafik (bukan node) untuk menggeser (pan) tampilan. Coba juga gulir roda mouse untuk memperbesar/memperkecil.
 
 **Jika masih ada masalah, Lakukan Hal Ini:**
 
@@ -372,14 +441,10 @@ st.info("""
     * Tekan `F12` di browser Anda (atau klik kanan pada halaman dan pilih "Inspect" / "Periksa").
     * Buka tab "Console" (Konsol).
     * Cari pesan error berwarna merah.
-    * Cari juga pesan `console.log` yang saya tambahkan (misalnya, "Node diklik:", dll.). Ini akan memberi tahu kita apakah event klik terdeteksi dan apakah ada kesalahan saat mencoba menampilkan atribut.
+    * Cari juga pesan `console.log` yang saya tambahkan. Ini akan memberi tahu kita apakah event klik terdeteksi dan apakah ada kesalahan saat mencoba menampilkan atribut atau menyaring grafik.
 * **Periksa Struktur `data.json` Anda:**
-    * Pastikan node "TinmasIndonesia" ada di dalam `data.json` Anda.
-    * Pastikan node tersebut memiliki properti `label` dan `attributes` di dalam objeknya. Atribut-atribut inilah yang akan ditampilkan. Contoh:
-        ```json
-        {"label": "TinmasIndonesia", "x": ..., "y": ..., "id": "...", "attributes": {"Out-Degree": "...", "In-Degree": "...", ...}, "color": "...", "size": ...}
-        ```
-    * Jika `attributes` tidak ada atau kosong, panel mungkin muncul tetapi tidak menampilkan detail.
-* **Perhatikan Ukuran Node:** Jika node terlalu kecil, mungkin sulit untuk mengkliknya secara akurat. Anda dapat sementara meningkatkan `minNodeSize` dan `maxNodeSize` di pengaturan Sigma.js untuk membuatnya lebih besar saat debugging.
+    * Pastikan ada `edges` (koneksi) yang valid di `data.json` Anda yang menghubungkan node-node. Jika tidak ada edge yang relevan, fungsionalitas "Connections" tidak akan menampilkan apa pun.
+    * Pastikan setiap edge memiliki properti `source` dan `target` yang mengacu pada `id` node yang ada.
+* **Perhatikan Pengaturan Sigma.js `autoRescale`:** Saya telah menambahkan `autoRescale: false`. Terkadang, auto-rescale dapat mengganggu interaksi manual atau zoom. Jika masih tidak bisa digerakkan, coba komentar `autoRescale: false` atau ubah nilainya.
 * **Bagikan Output Konsol:** Jika Anda melihat pesan error atau pesan `console.log` yang tidak terduga, salin dan tempelkan di sini. Ini akan sangat membantu dalam mendiagnosis masalah.
 """)
