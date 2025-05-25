@@ -310,11 +310,6 @@ components.html(html_code, height=850)
 jumlah_node = len([node for node in data_json_content.get('nodes', []) 
                   if node.get('id') != '855'])  
 
-st.markdown(f"""
-### Informasi Teknis:
-- **Jumlah Node**: {jumlah_node}
-- **Jumlah Edge**: {len(data_json_content.get('edges', []))}
-""")
 
 st.markdown(f"""
 ### Panduan Penggunaan:
