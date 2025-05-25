@@ -319,6 +319,6 @@ st.markdown(f"""
 5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
 
 ### Informasi Teknis:
-- **Jumlah Node**: {len(data_json_content.get('nodes', []))}
+- **Jumlah Node**: 855
 - **Jumlah Edge**: {len(data_json_content.get('edges', []))}
 """)
