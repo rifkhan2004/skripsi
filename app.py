@@ -7,18 +7,18 @@ try:
     with open('data.json', 'r') as f:
         data_json_content = json.load(f)
 except FileNotFoundError:
-    st.error("Kesalahan: data.json tidak ditemukan. Pastikan file berada di direktori yang sama.")
-    st.stop()  # Hentikan eksekusi jika file data tidak ditemukan
+    st.error("Error: File data.json tidak ditemukan. Pastikan file berada di direktori yang sama.")
+    st.stop()
 
-# Konversi kamus Python ke string JSON untuk disematkan di JavaScript
+# Konversi ke string JSON untuk JavaScript
 json_data_str = json.dumps(data_json_content)
 
-# HTML dan JavaScript code to embed in Streamlit
+# Kode HTML dan JavaScript
 html_code = f"""
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Visualisasi Jaringan OII</title>
+    <title>Visualisasi Jaringan</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
@@ -29,7 +29,7 @@ html_code = f"""
             border: 1px solid #ccc;
             background-color: #f0f0f0;
         }}
-        #mainpanel {{
+        #panel-utama {{
             position: absolute;
             top: 20px;
             left: 20px;
@@ -37,12 +37,10 @@ html_code = f"""
             padding: 15px;
             border-radius: 8px;
             z-index: 100;
-            max-height: 80%;
-            overflow-y: auto;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             width: 280px;
         }}
-        #node-attributes-panel {{
+        #panel-info {{
             position: absolute;
             top: 20px;
             right: 20px;
@@ -50,45 +48,28 @@ html_code = f"""
             padding: 15px;
             border-radius: 8px;
             z-index: 90;
-            max-height: 80%;
+            max-height: 80vh;
             overflow-y: auto;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             width: 300px;
             display: none;
         }}
-        .connection-list {{
-            margin-top: 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            border-top: 1px solid #eee;
-            padding-top: 10px;
+        .baris-metrik {{
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #eee;
         }}
-        .connection-section {{
-            margin-bottom: 15px;
-        }}
-        .connection-header {{
+        .label-metrik {{
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #555;
         }}
-        .mutual-header {{ color: #9467bd; }}
-        .incoming-header {{ color: #2ca02c; }}
-        .outgoing-header {{ color: #ff7f0e; }}
-        .connection-names {{
-            display: flex;
-            flex-wrap: wrap;
-            gap: 5px;
+        .nilai-metrik {{
+            color: #333;
         }}
-        .name-item {{
-            padding: 2px 5px;
-            border-radius: 3px;
-            cursor: pointer;
-        }}
-        .mutual-name {{ color: #9467bd; }}
-        .incoming-name {{ color: #2ca02c; }}
-        .outgoing-name {{ color: #ff7f0e; }}
-        .name-item:hover {{
-            text-decoration: underline;
-            background-color: #f0f0f0;
+        .judul-bagian {{
+            font-weight: bold;
+            margin: 15px 0 5px 0;
+            color: #444;
         }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
@@ -96,29 +77,13 @@ html_code = f"""
 </head>
 <body>
     <div id="sigma-container"></div>
-    <div id="mainpanel">
+    <div id="panel-utama">
         <h2>Visualisasi Jaringan</h2>
-        <p>Ini adalah contoh visualisasi jaringan.</p>
-        <div>
-            <h3>Legenda:</h3>
-            <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
-            <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
-            <p><strong style="color: #9467bd;">Mutual</strong>: Koneksi dua arah</p>
-            <p><strong style="color: #2ca02c;">Incoming</strong>: Node yang mengarah ke node yang dipilih</p>
-            <p><strong style="color: #ff7f0e;">Outgoing</strong>: Node yang dituju dari node yang dipilih</p>
-        </div>
-        <div>
-            <h3>Cari:</h3>
-            <input type="text" id="search-input" placeholder="Cari berdasarkan nama">
-        </div>
+        <p>Klik pada node untuk melihat informasi detail.</p>
     </div>
-    <div id="node-attributes-panel">
-        <h3>Atribut Node: <span id="node-label"></span></h3>
-        <div id="node-details"></div>
-        <div class="connection-list">
-            <h4>Connections:</h4>
-            <div id="connections-container"></div>
-        </div>
+    <div id="panel-info">
+        <h3 id="judul-node">Informasi Node</h3>
+        <div id="metrik-node"></div>
     </div>
 
     <script>
@@ -166,227 +131,69 @@ html_code = f"""
         // Refresh tampilan
         s.refresh();
         
-        // Fungsi pencarian
-        document.getElementById('search-input').addEventListener('input', function(e) {{
-            const query = e.target.value.toLowerCase();
-            s.graph.nodes().forEach(node => {{
-                const label = (node.label || node.id || '').toLowerCase();
-                node.hidden = query !== '' && !label.includes(query);
-            }});
-            s.refresh();
-        }});
-        
-        // Fungsi untuk mendapatkan semua jenis koneksi
-        function getConnectedNodes(nodeId) {{
-            const connectedNodes = {{
-                mutual: [],
-                incoming: [],
-                outgoing: []
-            }};
+        // Fungsi untuk menampilkan panel info node
+        function tampilkanPanelInfo(node) {{
+            const panel = document.getElementById('panel-info');
+            const judul = document.getElementById('judul-node');
+            const kontainerMetrik = document.getElementById('metrik-node');
             
-            // Cari mutual connections (dua arah)
-            s.graph.nodes().forEach(otherNode => {{
-                if (otherNode.id !== nodeId) {{
-                    const hasOutgoing = s.graph.hasEdge(nodeId, otherNode.id);
-                    const hasIncoming = s.graph.hasEdge(otherNode.id, nodeId);
-                    if (hasOutgoing && hasIncoming) {{
-                        connectedNodes.mutual.push(otherNode.id);
-                    }} else if (hasIncoming) {{
-                        connectedNodes.incoming.push(otherNode.id);
-                    }} else if (hasOutgoing) {{
-                        connectedNodes.outgoing.push(otherNode.id);
-                    }}
+            judul.textContent = node.label || node.id;
+            kontainerMetrik.innerHTML = '';
+            
+            const atribut = node.attributes || {{}};
+            
+            // Daftar metrik yang akan ditampilkan
+            const daftarMetrik = [
+                {{ key: 'out_degree', label: 'Out-Degree' }},
+                {{ key: 'in_degree', label: 'In-Degree' }},
+                {{ key: 'closeness_centrality', label: 'Closeness Centrality' }},
+                {{ key: 'inferred_class', label: 'Kelas' }},
+                {{ key: 'eigenvector_centrality', label: 'Eigenvector Centrality' }},
+                {{ key: 'weighted_in_degree', label: 'Weighted In-Degree' }},
+                {{ key: 'betweenness_centrality', label: 'Betweenness Centrality' }},
+                {{ key: 'pagerank', label: 'PageRank' }},
+                {{ key: 'harmonic_closeness', label: 'Harmonic Closeness' }},
+                {{ key: 'weighted_degree', label: 'Weighted Degree' }},
+                {{ key: 'weighted_out_degree', label: 'Weighted Out-Degree' }}
+            ];
+            
+            // Buat tampilan metrik
+            daftarMetrik.forEach(metrik => {{
+                if (atribut[metrik.key] !== undefined) {{
+                    const baris = document.createElement('div');
+                    baris.className = 'baris-metrik';
+                    baris.innerHTML = `
+                        <div class="label-metrik">${{metrik.label}}:</div>
+                        <div class="nilai-metrik">${{atribut[metrik.key]}}</div>
+                    `;
+                    kontainerMetrik.appendChild(baris);
                 }}
             }});
-            
-            return connectedNodes;
-        }}
-        
-        // Fungsi untuk menampilkan panel koneksi
-        function showConnectionsPanel(node, connections) {{
-            const panel = document.getElementById('node-attributes-panel');
-            const label = document.getElementById('node-label');
-            const details = document.getElementById('node-details');
-            const connectionsContainer = document.getElementById('connections-container');
-            
-            label.textContent = node.label || node.id;
-            details.innerHTML = '';
-            connectionsContainer.innerHTML = '';
-            
-            // Tampilkan atribut node
-            const attributes = node.attributes || node;
-            for (const key in attributes) {{
-                if (['x', 'y', 'size', 'color', 'id', 'label'].includes(key)) continue;
-                const div = document.createElement('div');
-                div.innerHTML = `<strong>${{key}}:</strong> ${{attributes[key]}}`;
-                details.appendChild(div);
-            }}
-            
-            // Tampilkan mutual connections
-            if (connections.mutual.length > 0) {{
-                const section = document.createElement('div');
-                section.className = 'connection-section';
-                section.innerHTML = `
-                    <div class="connection-header mutual-header">Mutual (${{connections.mutual.length}})</div>
-                    <div class="connection-names" id="mutual-names"></div>
-                `;
-                connectionsContainer.appendChild(section);
-                
-                connections.mutual.forEach(nodeId => {{
-                    const neighbor = s.graph.nodes(nodeId);
-                    if (neighbor) {{
-                        const nameItem = document.createElement('span');
-                        nameItem.className = 'name-item mutual-name';
-                        nameItem.textContent = neighbor.label || neighbor.id;
-                        nameItem.addEventListener('click', () => {{
-                            s.camera.goTo({{ x: neighbor.x, y: neighbor.y, ratio: 0.8 }});
-                        }});
-                        document.getElementById('mutual-names').appendChild(nameItem);
-                    }}
-                }});
-            }}
-            
-            // Tampilkan incoming connections
-            if (connections.incoming.length > 0) {{
-                const section = document.createElement('div');
-                section.className = 'connection-section';
-                section.innerHTML = `
-                    <div class="connection-header incoming-header">Incoming (${{connections.incoming.length}})</div>
-                    <div class="connection-names" id="incoming-names"></div>
-                `;
-                connectionsContainer.appendChild(section);
-                
-                connections.incoming.forEach(nodeId => {{
-                    const neighbor = s.graph.nodes(nodeId);
-                    if (neighbor) {{
-                        const nameItem = document.createElement('span');
-                        nameItem.className = 'name-item incoming-name';
-                        nameItem.textContent = neighbor.label || neighbor.id;
-                        nameItem.addEventListener('click', () => {{
-                            s.camera.goTo({{ x: neighbor.x, y: neighbor.y, ratio: 0.8 }});
-                        }});
-                        document.getElementById('incoming-names').appendChild(nameItem);
-                    }}
-                }});
-            }}
-            
-            // Tampilkan outgoing connections
-            if (connections.outgoing.length > 0) {{
-                const section = document.createElement('div');
-                section.className = 'connection-section';
-                section.innerHTML = `
-                    <div class="connection-header outgoing-header">Outgoing (${{connections.outgoing.length}})</div>
-                    <div class="connection-names" id="outgoing-names"></div>
-                `;
-                connectionsContainer.appendChild(section);
-                
-                connections.outgoing.forEach(nodeId => {{
-                    const neighbor = s.graph.nodes(nodeId);
-                    if (neighbor) {{
-                        const nameItem = document.createElement('span');
-                        nameItem.className = 'name-item outgoing-name';
-                        nameItem.textContent = neighbor.label || neighbor.id;
-                        nameItem.addEventListener('click', () => {{
-                            s.camera.goTo({{ x: neighbor.x, y: neighbor.y, ratio: 0.8 }});
-                        }});
-                        document.getElementById('outgoing-names').appendChild(nameItem);
-                    }}
-                }});
-            }}
             
             panel.style.display = 'block';
         }}
         
-        // Fungsi untuk highlight node yang terhubung
-        function highlightConnectedNodes(nodeId, connections) {{
-            // Reset semua node ke hidden
-            s.graph.nodes().forEach(node => {{
-                node.hidden = true;
-                node.color = '#1f77b4';
-            }});
-            
-            // Tampilkan node yang dipilih
-            const selectedNode = s.graph.nodes(nodeId);
-            if (selectedNode) {{
-                selectedNode.hidden = false;
-                selectedNode.color = '#d62728';
-            }}
-            
-            // Tampilkan node yang terhubung dengan warna berbeda
-            connections.mutual.forEach(otherNodeId => {{
-                const neighbor = s.graph.nodes(otherNodeId);
-                if (neighbor) {{
-                    neighbor.hidden = false;
-                    neighbor.color = '#9467bd'; // Ungu untuk mutual
-                }}
-            }});
-            
-            connections.incoming.forEach(otherNodeId => {{
-                const neighbor = s.graph.nodes(otherNodeId);
-                if (neighbor) {{
-                    neighbor.hidden = false;
-                    neighbor.color = '#2ca02c'; // Hijau untuk incoming
-                }}
-            }});
-            
-            connections.outgoing.forEach(otherNodeId => {{
-                const neighbor = s.graph.nodes(otherNodeId);
-                if (neighbor) {{
-                    neighbor.hidden = false;
-                    neighbor.color = '#ff7f0e'; // Oranye untuk outgoing
-                }}
-            }});
-            
-            s.refresh();
-        }}
-        
-        // Fungsi reset tampilan ke semua node
-        function resetView() {{
-            s.graph.nodes().forEach(node => {{
-                node.hidden = false;
-                node.color = '#1f77b4';
-            }});
-            
-            s.graph.edges().forEach(edge => {{
-                edge.hidden = false;
-            }});
-            
-            s.refresh();
-        }}
-        
-        // Fungsi tampilkan detail node
+        // Event klik node
         s.bind('clickNode', function(e) {{
             const node = e.data.node;
-            const connections = getConnectedNodes(node.id);
-            showConnectionsPanel(node, connections);
-            highlightConnectedNodes(node.id, connections);
-        }});
-        
-        // Sembunyikan panel dan reset tampilan saat klik area kosong
-        s.bind('clickStage', function() {{
-            document.getElementById('node-attributes-panel').style.display = 'none';
-            resetView();
-        }});
-        
-        // Enable drag nodes
-        s.bind('downNode', function(e) {{
-            const node = e.data.node;
-            node.isDragging = true;
-        }});
-        
-        s.bind('mouseup', function() {{
-            s.graph.nodes().forEach(node => {{
-                node.isDragging = false;
+            tampilkanPanelInfo(node);
+            
+            // Highlight node yang diklik
+            s.graph.nodes().forEach(n => {{
+                n.color = n.id === node.id ? '#d62728' : '#1f77b4';
             }});
+            s.refresh();
         }});
         
-        s.bind('mousemove', function(e) {{
-            const draggedNode = s.graph.nodes().find(node => node.isDragging);
-            if (draggedNode) {{
-                draggedNode.x = e.data.captor.x;
-                draggedNode.y = e.data.captor.y;
-                s.refresh();
-            }}
+        // Event klik latar untuk menyembunyikan panel
+        s.bind('clickStage', function() {{
+            document.getElementById('panel-info').style.display = 'none';
+            
+            // Reset warna node
+            s.graph.nodes().forEach(n => {{
+                n.color = '#1f77b4';
+            }});
+            s.refresh();
         }});
     </script>
 </body>
@@ -396,33 +203,17 @@ html_code = f"""
 st.set_page_config(layout="wide")
 st.title("Visualisasi Jaringan Interaktif")
 
-st.write("""
-Visualisasi jaringan ini menampilkan hubungan antara berbagai entitas. 
-Gunakan fitur berikut untuk berinteraksi dengan grafik:
-""")
-
 # Render komponen HTML
 components.html(html_code, height=850)
 
 st.markdown(f"""
 ### Panduan Penggunaan:
-1. **Klik Node**: Klik pada node untuk melihat:
-   - Detail atribut node
-   - Daftar node yang terhubung (Mutual, Incoming, Outgoing)
-   - Hanya node yang terhubung yang akan ditampilkan di grafik
-2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
-3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
-4. **Drag Node**: Klik dan tahan node untuk memindahkannya
-5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
-
-### Legenda Warna:
-- **Merah**: Node yang sedang dipilih
-- **Ungu**: Mutual connections (dua arah)
-- **Hijau**: Incoming connections (mengarah ke node yang dipilih)
-- **Oranye**: Outgoing connections (dituju dari node yang dipilih)
-- **Biru**: Node biasa
+1. **Klik Node**: Klik pada node untuk melihat informasi detail
+2. **Klik Latar**: Klik area kosong untuk menyembunyikan panel info
+3. **Zoom**: Gunakan scroll mouse untuk memperbesar/memperkecil
+4. **Geser**: Klik dan drag untuk menggeser tampilan
 
 ### Informasi Teknis:
-- **Jumlah Node**: 855  
+- **Jumlah Node**: {len(data_json_content.get('nodes', []))}
 - **Jumlah Edge**: {len(data_json_content.get('edges', []))}
 """)
