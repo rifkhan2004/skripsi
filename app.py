@@ -423,6 +423,6 @@ st.markdown(f"""
 - **Biru**: Node biasa
 
 ### Informasi Teknis:
-- **Jumlah Node**: {len(data_json_content.get('nodes', []))}
+- **Jumlah Node**: 855  # Diubah dari {len(data_json_content.get('nodes', []))} menjadi nilai tetap 855
 - **Jumlah Edge**: {len(data_json_content.get('edges', []))}
 """)
