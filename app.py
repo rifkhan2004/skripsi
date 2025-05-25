@@ -307,6 +307,15 @@ Gunakan fitur berikut untuk berinteraksi dengan grafik:
 # Render komponen HTML
 components.html(html_code, height=850)
 
+jumlah_node = len([node for node in data_json_content.get('nodes', []) 
+                  if node.get('id') != '855'])  
+
+st.markdown(f"""
+### Informasi Teknis:
+- **Jumlah Node**: {jumlah_node}
+- **Jumlah Edge**: {len(data_json_content.get('edges', []))}
+""")
+
 st.markdown(f"""
 ### Panduan Penggunaan:
 1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
@@ -319,6 +328,6 @@ st.markdown(f"""
 5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
 
 ### Informasi Teknis:
-- **Jumlah Node**: 855
+- **Jumlah Node**: {jumlah_node}
 - **Jumlah Edge**: {len(data_json_content.get('edges', []))}
 """)
