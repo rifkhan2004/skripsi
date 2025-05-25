@@ -73,6 +73,24 @@ html_code = f"""
         .connection-item:hover {{
             background: #e0e0e0;
         }}
+        .connection-header {{
+            margin-bottom: 5px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #eee;
+            font-weight: bold;
+        }}
+        .in-degree-header {{
+            color: #2ca02c;
+        }}
+        .out-degree-header {{
+            color: #ff7f0e;
+        }}
+        .in-degree-item {{
+            color: #2ca02c;
+        }}
+        .out-degree-item {{
+            color: #ff7f0e;
+        }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
@@ -86,7 +104,8 @@ html_code = f"""
             <h3>Legenda:</h3>
             <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
             <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
-            <p><strong style="color: #ff7f0e;">Node Terhubung</strong>: Node yang berhubungan dengan node yang dipilih</p>
+            <p><strong style="color: #2ca02c;">In-Degree</strong>: Node yang mengarah ke node yang dipilih</p>
+            <p><strong style="color: #ff7f0e;">Out-Degree</strong>: Node yang dituju dari node yang dipilih</p>
         </div>
         <div>
             <h3>Cari:</h3>
@@ -161,53 +180,75 @@ html_code = f"""
             s.refresh();
         }});
         
+        // Fungsi untuk mendapatkan node yang terhubung (in-degree dan out-degree)
+        function getConnectedNodes(nodeId) {{
+            const connectedNodes = {{
+                inDegree: [],
+                outDegree: []
+            }};
+            
+            s.graph.edges().forEach(edge => {{
+                if (edge.source === nodeId) {{
+                    connectedNodes.outDegree.push(edge.target);
+                }} else if (edge.target === nodeId) {{
+                    connectedNodes.inDegree.push(edge.source);
+                }}
+            }});
+            
+            return connectedNodes;
+        }}
+        
         // Fungsi untuk menampilkan hanya node yang terhubung
         function showConnectedNodes(nodeId) {{
             // Reset semua node ke hidden
             s.graph.nodes().forEach(node => {{
                 node.hidden = true;
-                node.color = '#1f77b4'; // Reset warna
+                node.color = '#1f77b4';
             }});
             
             // Tampilkan node yang dipilih
             const selectedNode = s.graph.nodes(nodeId);
             if (selectedNode) {{
                 selectedNode.hidden = false;
-                selectedNode.color = '#d62728'; // Warna merah untuk node yang dipilih
+                selectedNode.color = '#d62728';
             }}
             
-            // Temukan semua node yang terhubung
-            const connectedNodes = new Set();
-            const connectedEdges = s.graph.edges().filter(edge => {{
-                return edge.source === nodeId || edge.target === nodeId;
-            }});
+            // Dapatkan node yang terhubung
+            const connectedNodes = getConnectedNodes(nodeId);
+            const allConnectedNodes = [...connectedNodes.inDegree, ...connectedNodes.outDegree];
             
-            connectedEdges.forEach(edge => {{
-                const otherNodeId = edge.source === nodeId ? edge.target : edge.source;
-                connectedNodes.add(otherNodeId);
-                
-                // Tampilkan edge yang terhubung
-                edge.hidden = false;
-                
-                // Tampilkan node yang terhubung
+            // Tampilkan node yang terhubung dengan warna berbeda
+            connectedNodes.inDegree.forEach(otherNodeId => {{
                 const otherNode = s.graph.nodes(otherNodeId);
                 if (otherNode) {{
                     otherNode.hidden = false;
-                    otherNode.color = '#ff7f0e'; // Warna oranye untuk node terhubung
+                    otherNode.color = '#2ca02c'; // Hijau untuk in-degree
                 }}
             }});
             
-            // Tampilkan node yang dipilih dan edge yang terhubung
+            connectedNodes.outDegree.forEach(otherNodeId => {{
+                const otherNode = s.graph.nodes(otherNodeId);
+                if (otherNode) {{
+                    otherNode.hidden = false;
+                    otherNode.color = '#ff7f0e'; // Oranye untuk out-degree
+                }}
+            }});
+            
+            // Tampilkan edge yang terhubung
+            s.graph.edges().forEach(edge => {{
+                edge.hidden = !(allConnectedNodes.includes(edge.source) || allConnectedNodes.includes(edge.target));
+            }});
+            
             s.refresh();
             
-            return Array.from(connectedNodes);
+            return connectedNodes;
         }}
         
         // Fungsi reset tampilan ke semua node
         function resetView() {{
             s.graph.nodes().forEach(node => {{
                 node.hidden = false;
-                node.color = '#1f77b4'; // Warna default
+                node.color = '#1f77b4';
             }});
             
             s.graph.edges().forEach(edge => {{
@@ -238,29 +279,62 @@ html_code = f"""
                 details.appendChild(div);
             }}
             
-            // Tampilkan hanya node yang terhubung
-            const connectedNodeIds = showConnectedNodes(node.id);
+            // Tampilkan hanya node yang terhubung dan dapatkan daftar terpisah
+            const connectedNodes = showConnectedNodes(node.id);
             
-            // Tampilkan daftar node yang terhubung
-            connectedNodeIds.forEach(nodeId => {{
-                const connectedNode = s.graph.nodes(nodeId);
-                if (connectedNode) {{
-                    const connectionItem = document.createElement('div');
-                    connectionItem.className = 'connection-item';
-                    connectionItem.textContent = connectedNode.label || connectedNode.id;
-                    
-                    // Tambahkan event click untuk fokus ke node yang terhubung
-                    connectionItem.addEventListener('click', () => {{
-                        s.camera.goTo({{
-                            x: connectedNode.x,
-                            y: connectedNode.y,
-                            ratio: 0.8
+            // Tampilkan daftar in-degree connections
+            if (connectedNodes.inDegree.length > 0) {{
+                const inDegreeHeader = document.createElement('div');
+                inDegreeHeader.className = 'connection-header in-degree-header';
+                inDegreeHeader.textContent = 'In-Degree:';
+                connectionsContainer.appendChild(inDegreeHeader);
+                
+                connectedNodes.inDegree.forEach(nodeId => {{
+                    const connectedNode = s.graph.nodes(nodeId);
+                    if (connectedNode) {{
+                        const connectionItem = document.createElement('div');
+                        connectionItem.className = 'connection-item in-degree-item';
+                        connectionItem.textContent = connectedNode.label || connectedNode.id;
+                        
+                        connectionItem.addEventListener('click', () => {{
+                            s.camera.goTo({{
+                                x: connectedNode.x,
+                                y: connectedNode.y,
+                                ratio: 0.8
+                            }});
                         }});
-                    }});
-                    
-                    connectionsContainer.appendChild(connectionItem);
-                }}
-            }});
+                        
+                        connectionsContainer.appendChild(connectionItem);
+                    }}
+                }});
+            }}
+            
+            // Tampilkan daftar out-degree connections
+            if (connectedNodes.outDegree.length > 0) {{
+                const outDegreeHeader = document.createElement('div');
+                outDegreeHeader.className = 'connection-header out-degree-header';
+                outDegreeHeader.textContent = 'Out-Degree:';
+                connectionsContainer.appendChild(outDegreeHeader);
+                
+                connectedNodes.outDegree.forEach(nodeId => {{
+                    const connectedNode = s.graph.nodes(nodeId);
+                    if (connectedNode) {{
+                        const connectionItem = document.createElement('div');
+                        connectionItem.className = 'connection-item out-degree-item';
+                        connectionItem.textContent = connectedNode.label || connectedNode.id;
+                        
+                        connectionItem.addEventListener('click', () => {{
+                            s.camera.goTo({{
+                                x: connectedNode.x,
+                                y: connectedNode.y,
+                                ratio: 0.8
+                            }});
+                        }});
+                        
+                        connectionsContainer.appendChild(connectionItem);
+                    }}
+                }});
+            }}
             
             panel.style.display = 'block';
         }});
@@ -309,14 +383,20 @@ components.html(html_code, height=850)
 
 st.markdown(f"""
 ### Panduan Penggunaan:
-1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
+1. **Klik Node**: Klik pada node untuk melihat:
    - Detail atribut node
-   - Daftar node yang terhubung
+   - Daftar node yang terhubung (dibedakan antara in-degree dan out-degree)
    - Hanya node yang terhubung yang akan ditampilkan di grafik
 2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
 3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
 4. **Drag Node**: Klik dan tahan node untuk memindahkannya
 5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
+
+### Legenda Warna:
+- **Merah**: Node yang sedang dipilih
+- **Hijau**: Node in-degree (mengarah ke node yang dipilih)
+- **Oranye**: Node out-degree (dituju dari node yang dipilih)
+- **Biru**: Node biasa
 
 ### Informasi Teknis:
 - **Jumlah Node**: {len(data_json_content.get('nodes', []))}
