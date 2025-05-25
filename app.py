@@ -63,27 +63,16 @@ html_code = f"""
             border-top: 1px solid #eee;
             padding-top: 10px;
         }}
-        .connection-item {{
-            padding: 5px;
-            margin: 3px 0;
-            background: #f5f5f5;
-            border-radius: 3px;
-            cursor: pointer;
-        }}
-        .connection-item:hover {{
-            background: #e0e0e0;
+        .connection-section {{
+            margin-bottom: 15px;
         }}
         .connection-header {{
-            margin-bottom: 5px;
-            padding-bottom: 5px;
             font-weight: bold;
+            margin-bottom: 5px;
         }}
-        .incoming-header {{
-            color: #2ca02c;
-        }}
-        .outgoing-header {{
-            color: #ff7f0e;
-        }}
+        .mutual-header {{ color: #9467bd; }}
+        .incoming-header {{ color: #2ca02c; }}
+        .outgoing-header {{ color: #ff7f0e; }}
         .connection-names {{
             display: flex;
             flex-wrap: wrap;
@@ -94,14 +83,12 @@ html_code = f"""
             border-radius: 3px;
             cursor: pointer;
         }}
-        .incoming-name {{
-            color: #2ca02c;
-        }}
-        .outgoing-name {{
-            color: #ff7f0e;
-        }}
+        .mutual-name {{ color: #9467bd; }}
+        .incoming-name {{ color: #2ca02c; }}
+        .outgoing-name {{ color: #ff7f0e; }}
         .name-item:hover {{
             text-decoration: underline;
+            background-color: #f0f0f0;
         }}
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
@@ -116,6 +103,7 @@ html_code = f"""
             <h3>Legenda:</h3>
             <p><strong style="color: #1f77b4;">Node</strong>: Mewakili entitas</p>
             <p><strong style="color: #999;">Edge</strong>: Mewakili koneksi</p>
+            <p><strong style="color: #9467bd;">Mutual</strong>: Koneksi dua arah</p>
             <p><strong style="color: #2ca02c;">Incoming</strong>: Node yang mengarah ke node yang dipilih</p>
             <p><strong style="color: #ff7f0e;">Outgoing</strong>: Node yang dituju dari node yang dipilih</p>
         </div>
@@ -128,6 +116,7 @@ html_code = f"""
         <h3>Atribut Node: <span id="node-label"></span></h3>
         <div id="node-details"></div>
         <div class="connection-list">
+            <h4>Connections:</h4>
             <div id="connections-container"></div>
         </div>
     </div>
@@ -151,12 +140,8 @@ html_code = f"""
             }}
         }});
 
-        // Simpan data asli untuk reset
-        let originalGraphData = null;
-
         // Muat data
         s.graph.read(jsonData);
-        originalGraphData = JSON.parse(JSON.stringify(jsonData));
         
         // Atur ukuran node berdasarkan degree
         s.graph.nodes().forEach(node => {{
@@ -191,26 +176,129 @@ html_code = f"""
             s.refresh();
         }});
         
-        // Fungsi untuk mendapatkan node yang terhubung (incoming dan outgoing)
+        // Fungsi untuk mendapatkan semua jenis koneksi
         function getConnectedNodes(nodeId) {{
             const connectedNodes = {{
+                mutual: [],
                 incoming: [],
                 outgoing: []
             }};
             
-            s.graph.edges().forEach(edge => {{
-                if (edge.source === nodeId) {{
-                    connectedNodes.outgoing.push(edge.target);
-                }} else if (edge.target === nodeId) {{
-                    connectedNodes.incoming.push(edge.source);
+            // Cari mutual connections (dua arah)
+            s.graph.nodes().forEach(otherNode => {{
+                if (otherNode.id !== nodeId) {{
+                    const hasOutgoing = s.graph.hasEdge(nodeId, otherNode.id);
+                    const hasIncoming = s.graph.hasEdge(otherNode.id, nodeId);
+                    if (hasOutgoing && hasIncoming) {{
+                        connectedNodes.mutual.push(otherNode.id);
+                    }} else if (hasIncoming) {{
+                        connectedNodes.incoming.push(otherNode.id);
+                    }} else if (hasOutgoing) {{
+                        connectedNodes.outgoing.push(otherNode.id);
+                    }}
                 }}
             }});
             
             return connectedNodes;
         }}
         
-        // Fungsi untuk menampilkan hanya node yang terhubung
-        function showConnectedNodes(nodeId) {{
+        // Fungsi untuk menampilkan panel koneksi
+        function showConnectionsPanel(node, connections) {{
+            const panel = document.getElementById('node-attributes-panel');
+            const label = document.getElementById('node-label');
+            const details = document.getElementById('node-details');
+            const connectionsContainer = document.getElementById('connections-container');
+            
+            label.textContent = node.label || node.id;
+            details.innerHTML = '';
+            connectionsContainer.innerHTML = '';
+            
+            // Tampilkan atribut node
+            const attributes = node.attributes || node;
+            for (const key in attributes) {{
+                if (['x', 'y', 'size', 'color', 'id', 'label'].includes(key)) continue;
+                const div = document.createElement('div');
+                div.innerHTML = `<strong>${{key}}:</strong> ${{attributes[key]}}`;
+                details.appendChild(div);
+            }}
+            
+            // Tampilkan mutual connections
+            if (connections.mutual.length > 0) {{
+                const section = document.createElement('div');
+                section.className = 'connection-section';
+                section.innerHTML = `
+                    <div class="connection-header mutual-header">Mutual (${{connections.mutual.length}})</div>
+                    <div class="connection-names" id="mutual-names"></div>
+                `;
+                connectionsContainer.appendChild(section);
+                
+                connections.mutual.forEach(nodeId => {{
+                    const neighbor = s.graph.nodes(nodeId);
+                    if (neighbor) {{
+                        const nameItem = document.createElement('span');
+                        nameItem.className = 'name-item mutual-name';
+                        nameItem.textContent = neighbor.label || neighbor.id;
+                        nameItem.addEventListener('click', () => {{
+                            s.camera.goTo({{ x: neighbor.x, y: neighbor.y, ratio: 0.8 }});
+                        }});
+                        document.getElementById('mutual-names').appendChild(nameItem);
+                    }}
+                }});
+            }}
+            
+            // Tampilkan incoming connections
+            if (connections.incoming.length > 0) {{
+                const section = document.createElement('div');
+                section.className = 'connection-section';
+                section.innerHTML = `
+                    <div class="connection-header incoming-header">Incoming (${{connections.incoming.length}})</div>
+                    <div class="connection-names" id="incoming-names"></div>
+                `;
+                connectionsContainer.appendChild(section);
+                
+                connections.incoming.forEach(nodeId => {{
+                    const neighbor = s.graph.nodes(nodeId);
+                    if (neighbor) {{
+                        const nameItem = document.createElement('span');
+                        nameItem.className = 'name-item incoming-name';
+                        nameItem.textContent = neighbor.label || neighbor.id;
+                        nameItem.addEventListener('click', () => {{
+                            s.camera.goTo({{ x: neighbor.x, y: neighbor.y, ratio: 0.8 }});
+                        }});
+                        document.getElementById('incoming-names').appendChild(nameItem);
+                    }}
+                }});
+            }}
+            
+            // Tampilkan outgoing connections
+            if (connections.outgoing.length > 0) {{
+                const section = document.createElement('div');
+                section.className = 'connection-section';
+                section.innerHTML = `
+                    <div class="connection-header outgoing-header">Outgoing (${{connections.outgoing.length}})</div>
+                    <div class="connection-names" id="outgoing-names"></div>
+                `;
+                connectionsContainer.appendChild(section);
+                
+                connections.outgoing.forEach(nodeId => {{
+                    const neighbor = s.graph.nodes(nodeId);
+                    if (neighbor) {{
+                        const nameItem = document.createElement('span');
+                        nameItem.className = 'name-item outgoing-name';
+                        nameItem.textContent = neighbor.label || neighbor.id;
+                        nameItem.addEventListener('click', () => {{
+                            s.camera.goTo({{ x: neighbor.x, y: neighbor.y, ratio: 0.8 }});
+                        }});
+                        document.getElementById('outgoing-names').appendChild(nameItem);
+                    }}
+                }});
+            }}
+            
+            panel.style.display = 'block';
+        }}
+        
+        // Fungsi untuk highlight node yang terhubung
+        function highlightConnectedNodes(nodeId, connections) {{
             // Reset semua node ke hidden
             s.graph.nodes().forEach(node => {{
                 node.hidden = true;
@@ -224,35 +312,32 @@ html_code = f"""
                 selectedNode.color = '#d62728';
             }}
             
-            // Dapatkan node yang terhubung
-            const connectedNodes = getConnectedNodes(nodeId);
-            const allConnectedNodes = [...connectedNodes.incoming, ...connectedNodes.outgoing];
-            
             // Tampilkan node yang terhubung dengan warna berbeda
-            connectedNodes.incoming.forEach(otherNodeId => {{
-                const otherNode = s.graph.nodes(otherNodeId);
-                if (otherNode) {{
-                    otherNode.hidden = false;
-                    otherNode.color = '#2ca02c'; // Hijau untuk incoming
+            connections.mutual.forEach(otherNodeId => {{
+                const neighbor = s.graph.nodes(otherNodeId);
+                if (neighbor) {{
+                    neighbor.hidden = false;
+                    neighbor.color = '#9467bd'; // Ungu untuk mutual
                 }}
             }});
             
-            connectedNodes.outgoing.forEach(otherNodeId => {{
-                const otherNode = s.graph.nodes(otherNodeId);
-                if (otherNode) {{
-                    otherNode.hidden = false;
-                    otherNode.color = '#ff7f0e'; // Oranye untuk outgoing
+            connections.incoming.forEach(otherNodeId => {{
+                const neighbor = s.graph.nodes(otherNodeId);
+                if (neighbor) {{
+                    neighbor.hidden = false;
+                    neighbor.color = '#2ca02c'; // Hijau untuk incoming
                 }}
             }});
             
-            // Tampilkan edge yang terhubung
-            s.graph.edges().forEach(edge => {{
-                edge.hidden = !(allConnectedNodes.includes(edge.source) || allConnectedNodes.includes(edge.target));
+            connections.outgoing.forEach(otherNodeId => {{
+                const neighbor = s.graph.nodes(otherNodeId);
+                if (neighbor) {{
+                    neighbor.hidden = false;
+                    neighbor.color = '#ff7f0e'; // Oranye untuk outgoing
+                }}
             }});
             
             s.refresh();
-            
-            return connectedNodes;
         }}
         
         // Fungsi reset tampilan ke semua node
@@ -272,92 +357,9 @@ html_code = f"""
         // Fungsi tampilkan detail node
         s.bind('clickNode', function(e) {{
             const node = e.data.node;
-            const panel = document.getElementById('node-attributes-panel');
-            const label = document.getElementById('node-label');
-            const details = document.getElementById('node-details');
-            const connectionsContainer = document.getElementById('connections-container');
-            
-            label.textContent = node.label || node.id;
-            details.innerHTML = '';
-            connectionsContainer.innerHTML = '';
-            
-            // Tampilkan atribut node
-            const attributes = node.attributes || node;
-            for (const key in attributes) {{
-                if (['x', 'y', 'size', 'color', 'id', 'label'].includes(key)) continue;
-                const div = document.createElement('div');
-                div.innerHTML = `<strong>${{key}}:</strong> ${{attributes[key]}}`;
-                details.appendChild(div);
-            }}
-            
-            // Tampilkan hanya node yang terhubung dan dapatkan daftar terpisah
-            const connectedNodes = showConnectedNodes(node.id);
-            
-            // Tampilkan daftar incoming connections
-            if (connectedNodes.incoming.length > 0) {{
-                const incomingHeader = document.createElement('div');
-                incomingHeader.className = 'connection-header incoming-header';
-                incomingHeader.textContent = `Incoming (${{connectedNodes.incoming.length}})`;
-                connectionsContainer.appendChild(incomingHeader);
-                
-                const incomingNamesContainer = document.createElement('div');
-                incomingNamesContainer.className = 'connection-names';
-                
-                connectedNodes.incoming.forEach(nodeId => {{
-                    const connectedNode = s.graph.nodes(nodeId);
-                    if (connectedNode) {{
-                        const nameItem = document.createElement('span');
-                        nameItem.className = 'name-item incoming-name';
-                        nameItem.textContent = connectedNode.label || connectedNode.id;
-                        
-                        nameItem.addEventListener('click', () => {{
-                            s.camera.goTo({{
-                                x: connectedNode.x,
-                                y: connectedNode.y,
-                                ratio: 0.8
-                            }});
-                        }});
-                        
-                        incomingNamesContainer.appendChild(nameItem);
-                    }}
-                }});
-                
-                connectionsContainer.appendChild(incomingNamesContainer);
-            }}
-            
-            // Tampilkan daftar outgoing connections
-            if (connectedNodes.outgoing.length > 0) {{
-                const outgoingHeader = document.createElement('div');
-                outgoingHeader.className = 'connection-header outgoing-header';
-                outgoingHeader.textContent = `Outgoing (${{connectedNodes.outgoing.length}})`;
-                connectionsContainer.appendChild(outgoingHeader);
-                
-                const outgoingNamesContainer = document.createElement('div');
-                outgoingNamesContainer.className = 'connection-names';
-                
-                connectedNodes.outgoing.forEach(nodeId => {{
-                    const connectedNode = s.graph.nodes(nodeId);
-                    if (connectedNode) {{
-                        const nameItem = document.createElement('span');
-                        nameItem.className = 'name-item outgoing-name';
-                        nameItem.textContent = connectedNode.label || connectedNode.id;
-                        
-                        nameItem.addEventListener('click', () => {{
-                            s.camera.goTo({{
-                                x: connectedNode.x,
-                                y: connectedNode.y,
-                                ratio: 0.8
-                            }});
-                        }});
-                        
-                        outgoingNamesContainer.appendChild(nameItem);
-                    }}
-                }});
-                
-                connectionsContainer.appendChild(outgoingNamesContainer);
-            }}
-            
-            panel.style.display = 'block';
+            const connections = getConnectedNodes(node.id);
+            showConnectionsPanel(node, connections);
+            highlightConnectedNodes(node.id, connections);
         }});
         
         // Sembunyikan panel dan reset tampilan saat klik area kosong
@@ -406,7 +408,7 @@ st.markdown(f"""
 ### Panduan Penggunaan:
 1. **Klik Node**: Klik pada node untuk melihat:
    - Detail atribut node
-   - Daftar node yang terhubung (dibedakan antara incoming dan outgoing)
+   - Daftar node yang terhubung (Mutual, Incoming, Outgoing)
    - Hanya node yang terhubung yang akan ditampilkan di grafik
 2. **Klik Nama di Daftar**: Klik nama node di daftar koneksi untuk fokus ke node tersebut
 3. **Klik Area Kosong**: Kembalikan tampilan ke semua node
@@ -415,11 +417,12 @@ st.markdown(f"""
 
 ### Legenda Warna:
 - **Merah**: Node yang sedang dipilih
-- **Hijau**: Node incoming (mengarah ke node yang dipilih)
-- **Oranye**: Node outgoing (dituju dari node yang dipilih)
+- **Ungu**: Mutual connections (dua arah)
+- **Hijau**: Incoming connections (mengarah ke node yang dipilih)
+- **Oranye**: Outgoing connections (dituju dari node yang dipilih)
 - **Biru**: Node biasa
 
 ### Informasi Teknis:
-- **Jumlah Node**: 855
-- **Jumlah Edge**: 825
+- **Jumlah Node**: {len(data_json_content.get('nodes', []))}
+- **Jumlah Edge**: {len(data_json_content.get('edges', []))}
 """)
