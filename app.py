@@ -8,7 +8,7 @@ try:
         data_json_content = json.load(f)
 except FileNotFoundError:
     st.error("Kesalahan: data.json tidak ditemukan. Pastikan file berada di direktori yang sama.")
-    st.stop()  # Hentikan eksekusi jika file data tidak ditemukan
+    st.stop()
 
 # Konversi kamus Python ke string JSON untuk disematkan di JavaScript
 json_data_str = json.dumps(data_json_content)
@@ -76,6 +76,8 @@ html_code = f"""
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/sigma.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.parsers.json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.renderers.edgeLabels.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sigma.js/1.2.1/plugins/sigma.renderers.parallelEdges.min.js"></script>
 </head>
 <body>
     <div id="sigma-container"></div>
@@ -117,7 +119,13 @@ html_code = f"""
                 maxEdgeSize: 2,
                 enableCamera: true,
                 labelThreshold: 5,
-                mouseWheelEnabled: true
+                mouseWheelEnabled: true,
+                edgeLabelSize: 'proportional',
+                edgeLabelThreshold: 0,
+                defaultEdgeType: 'arrow',  // Tambahkan ini untuk edge berarah
+                edgeLabelSizeRatio: 1,
+                edgeLabelColor: '#000',
+                drawEdgeLabels: true
             }}
         }});
 
@@ -141,11 +149,13 @@ html_code = f"""
             }}
         }});
         
-        // Atur warna edge
+        // Atur warna dan jenis edge untuk graf berarah
         s.graph.edges().forEach(edge => {{
             if (!edge.color) {{
                 edge.color = '#999';
             }}
+            edge.type = 'arrow';  // Set edge type to arrow
+            edge.size = 1.5;      // Make edges slightly thicker
         }});
         
         // Refresh tampilan
@@ -307,10 +317,6 @@ Gunakan fitur berikut untuk berinteraksi dengan grafik:
 # Render komponen HTML
 components.html(html_code, height=850)
 
-jumlah_node = len([node for node in data_json_content.get('nodes', []) 
-                  if node.get('id') != '855'])  
-
-
 st.markdown(f"""
 ### Panduan Penggunaan:
 1. **Klik Node**: Klik pada node (misalnya "TimnasIndonesia") untuk melihat:
@@ -323,6 +329,6 @@ st.markdown(f"""
 5. **Zoom**: Gunakan scroll mouse untuk zoom in/out
 
 ### Informasi Teknis:
-- **Jumlah Node**: {jumlah_node}
+- **Jumlah Node**: 855
 - **Jumlah Edge**: {len(data_json_content.get('edges', []))}
 """)
